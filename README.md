@@ -1,2 +1,2 @@
 # metrics-raw
-Metrics Client Library to send RAW metrics to datastores
+Java Metrics Client Library to send RAW metrics to one or more datastores, heavily influenced by the dropwizard metrics library.
