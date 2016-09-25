@@ -10,6 +10,7 @@ The MetricRegsitry allows users to attach 'global' tags, which will be sent with
 The tags allow allow systems like grafana to query/aggregate metrics by tag, or not.
 
 The basic methods of interest:
+
 1. ** addTag(tag,value) ** - Attaches the tag to regsitry.
 2. ** timer(name) **  - Creates a new Timer instance with the specified name, the timer is started immediatly.
 3. ** timerWithTags(name) ** - returns a Builder, allowing tags to be added via addTag(tag,name), followed by build to create and start the timer.
