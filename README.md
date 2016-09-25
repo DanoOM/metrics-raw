@@ -42,8 +42,9 @@ EventListeners implement one method: onEvent(Event).
 
 ## Provided Listeners
 At this point we only have 2 Listeners implemented
+
 1. ConsoleListener - Simply logs the event to the console.
-2. KairosListener - sends events to a KairosDB endpoint.
+2. KairosListener - sends events to a KairosDB.
 
 * NOTE: KairosDB currently only stores ms precision, and can only store 1 event per ms of the same Event with the same NAME/TAG-SET.  
 
