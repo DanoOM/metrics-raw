@@ -12,13 +12,13 @@ The tags allow allow systems like grafana to query/aggregate metrics by tag, or 
 The basic methods of interest:
 
 1. **addTag(tag,value)** - Attaches the tag to registry.
-2. ** timer(name) **  - Creates a new Timer instance with the specified name, the timer is started immediatly.
-3. ** timerWithTags(name) ** - returns a Builder, allowing tags to be added via addTag(tag,name), followed by build to create and start the timer.
-4. ** event(name) ** - generates an event, that will be dispatched to any registered EventListener.
-5. ** eventWithTags(name) ** - returns a Builder, allowing tags to be added, calling build() will dispatch the event to any registered EventListener
-6. ** counter(name) ** - get/create a counter with the associated name.
-7. ** counterWithTags(name) ** - returns a builder, where you can attach tags.  The builder will either return a new Counter, or return a pre-existing counter if the name/tags match.
-8. ** scheduleGauge(name, interval,Gauge) ** - schedules the gauge to be invoked on a periodic interval, (based on the last run) 
+2. **timer(name)**  - Creates a new Timer instance with the specified name, the timer is started immediatly.
+3. **timerWithTags(name)** - returns a Builder, allowing tags to be added via addTag(tag,name), followed by build to create and start the timer.
+4. **event(name)** - generates an event, that will be dispatched to any registered EventListener.
+5. **eventWithTags(name)** - returns a Builder, allowing tags to be added, calling build() will dispatch the event to any registered EventListener
+6. **counter(name)** - get/create a counter with the associated name.
+7. **counterWithTags(name)** - returns a builder, where you can attach tags.  The builder will either return a new Counter, or return a pre-existing counter if the name/tags match.
+8. **scheduleGauge(name, interval,Gauge)** - schedules the gauge to be invoked on a periodic interval, (based on the last run) 
 
 ## Event
 We have no meters in this api, since we send the raw metric, as such we simply have 'events' in place of meters.
