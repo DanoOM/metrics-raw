@@ -1,5 +1,6 @@
 package org.dsh.metrics;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,8 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.dsh.metrics.EventImpl.Builder;
 
 public class MetricRegistry {
     private final Map<String,String> tags;
@@ -18,27 +17,36 @@ public class MetricRegistry {
 
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10);
 
-    public MetricRegistry(Map<String,String> tags) {
-        if (tags != null) {
-            this.tags = new ConcurrentHashMap<>();
-            this.tags.putAll(tags);
+    public static class Builder {
+        private Map<String,String> tags = new HashMap<String,String>();
+
+        public Builder addTag(String tag, String value) {
+            tags.put(tag, value);
+            return this;
         }
-        else {
-            this.tags = new ConcurrentHashMap<>();
+
+        public MetricRegistry build() {
+            if (tags.size() > 0) {
+                return new MetricRegistry(tags);
+            }
+            return new MetricRegistry();
         }
     }
 
-    public MetricRegistry() {
-        tags = new ConcurrentHashMap<>();
+    MetricRegistry(Map<String,String> tags) {
+        this.tags = tags;
     }
 
-    /** All Metrics generated will include all provided tags */
-    public void addTag(String tag, String value) {
-        this.tags.put(tag, value);
+    MetricRegistry() {
+        this.tags = null;
+    }
+
+    public Map<String,String> getTags() {
+        return Collections.unmodifiableMap(tags);
     }
 
     public Timer timer(String name) {
-    	return new Timer(name, this);
+    	return new Timer(name, this).start();
     }
 
     public Timer.Builder timerWithTags(String name) {
@@ -74,8 +82,8 @@ public class MetricRegistry {
         dispatchEvent(new LongEvent(name, tags, System.currentTimeMillis(),1));
     }
 
-    public Builder eventWithTags(String name) {
-        return new Builder(name, this);
+    public EventImpl.Builder eventWithTags(String name) {
+        return new EventImpl.Builder(name, this);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge) {
@@ -115,28 +123,31 @@ public class MetricRegistry {
     void postEvent(String name, long ts, Map<String,String> customTags, Number number) {
         EventImpl e;
         Map<String,String> ctags = new HashMap<String,String>();
-        ctags.putAll(tags);
+
+        if (tags != null) {
+            ctags.putAll(tags);
+        }
         if (customTags != null) {
         	ctags.putAll(customTags);
         }
 
         if (number instanceof Double) {
-            e = new DoubleEvent(name, ctags, System.currentTimeMillis(), number.doubleValue());
+            e = new DoubleEvent(name, ctags, ts, number.doubleValue());
         }
         else {
-            e = new LongEvent(name, ctags, System.currentTimeMillis(), number.longValue());
+            e = new LongEvent(name, ctags, ts, number.longValue());
         }
         dispatchEvent(e);
     }
 
     void postEvent(String name, long ts, long value) {
-        EventImpl e = new LongEvent(name, tags, System.currentTimeMillis(), value);
+        EventImpl e = new LongEvent(name, tags, ts, value);
         dispatchEvent(e);
 
     }
 
     void postEvent(String name, long ts, double value) {
-        EventImpl e = new DoubleEvent(name, tags, System.currentTimeMillis(), value);
+        EventImpl e = new DoubleEvent(name, tags, ts, value);
         dispatchEvent(e);
     }
 

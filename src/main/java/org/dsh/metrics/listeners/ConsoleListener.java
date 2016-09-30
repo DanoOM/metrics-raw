@@ -43,20 +43,9 @@ public class ConsoleListener implements EventListener, Runnable {
         }
         this.outStream = out;
         this.offerTime = offerTimeMillis;
-        start();
-    }
-
-    public void start() {
-        if(runThread == null) {
-            synchronized (this) {
-                if (runThread == null) {
-                    Thread tmp = new Thread(this);
-                    tmp.setDaemon(true);
-                    tmp.start();
-                    runThread = tmp;
-                }
-            }
-        }
+        runThread = new Thread(this);
+        runThread.setDaemon(true);
+        runThread.start();
     }
 
     @Override
@@ -90,5 +79,10 @@ public class ConsoleListener implements EventListener, Runnable {
         else {
             queue.offer(e);
         }
+    }
+
+    @Override
+    public int eventsBuffered() {
+        return queue.size();
     }
 }

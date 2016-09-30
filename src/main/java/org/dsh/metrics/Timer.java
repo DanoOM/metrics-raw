@@ -3,17 +3,15 @@ package org.dsh.metrics;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Timer extends MetricImpl {
+public class Timer extends MetricBase {
 	private long startTime;
 
     Timer(String name, MetricRegistry registry) {
         super(name, registry, null);
-        startTime = System.currentTimeMillis();
     }
 
     Timer(String name, MetricRegistry registry, Map<String,String> customTags) {
         super(name, registry, customTags);
-        startTime = System.currentTimeMillis();
     }
 
     /** Returns a new timer, with startTime = now */

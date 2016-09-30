@@ -103,6 +103,11 @@ public class KairosDBListener implements EventListener, Runnable {
     }
 
     @Override
+    public int eventsBuffered() {
+        return queue.size();
+    }
+
+    @Override
     public void onEvent(Event e) {
         if (offerTime > 0) {
             try {
