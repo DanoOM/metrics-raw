@@ -30,7 +30,7 @@ abstract public class BaseListenerTest {
     }
 
     private MetricRegistry buildRegistry() {
-        return new MetricRegistry.Builder()
+        return new MetricRegistry.Builder("dsh-metrics","test")
                 .addTag("dc", "dataCenter1")
                 .addTag("host", "host-1.xyz.org")
                 .build();
@@ -39,7 +39,23 @@ abstract public class BaseListenerTest {
     @Test
     public void counterTest() {
         try {
-            reg.counter("test.counter1");
+            reg.counter("counter1");
+            reg.addEventListener(getListener());
+            for (int i = 0; i < 10_000;i++) {
+                reg.counter("counter1").increment();
+            }
+            Thread.sleep(5000);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void counterTestTags1() {
+        try {
+        	String[] tgs = {"customer","xyz","queue","super"};
+            reg.counter("counter1",tgs);
             reg.addEventListener(getListener());
             for (int i = 0; i < 10_000;i++) {
                 reg.counter("counter1").increment();
@@ -56,7 +72,7 @@ abstract public class BaseListenerTest {
     public void counterNoTagsWithNoLookupTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            Counter c = reg.counter("test.counter1");
+            Counter c = reg.counter("counter1");
             reg.addEventListener(getListener());
             for (int i = 0; i < 10_000; i++) {
                 Thread.sleep(10);
@@ -72,7 +88,7 @@ abstract public class BaseListenerTest {
     public void counterNoTagsWithLookupTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            reg.counter("test.counter1");
+            reg.counter("counter1");
             reg.addEventListener(getListener());
             for (int i = 0; i < 10_000; i++) {
                 reg.counter("counter1").increment();;
@@ -88,7 +104,7 @@ abstract public class BaseListenerTest {
     public void counterWithTagsReuseTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            Counter c = reg.counterWithTags("test.counter1")
+            Counter c = reg.counterWithTags("counter1")
                .addTag("customer","customer-x")
                .addTag("queue","superQueue").build();
             reg.addEventListener(getListener());
@@ -107,7 +123,7 @@ abstract public class BaseListenerTest {
     public void counterWithTagsRebuildTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            reg.counterWithTags("test.counter1")
+            reg.counterWithTags("counter1")
                .addTag("customer","customer-x")
                .addTag("queue","someQueue").build();
             reg.addEventListener(getListener());
@@ -129,7 +145,7 @@ abstract public class BaseListenerTest {
         try {
             reg.addEventListener(getListener());
             for (int i = 0; i < 100 ; i++) {
-                Timer t = reg.timerWithTags("test.testTimer")
+                Timer t = reg.timerWithTags("testTimer")
                 			 .addTag("cust", "customer-x")
                 			 .build();
                 if (i % 5 == 0) {
@@ -152,7 +168,7 @@ abstract public class BaseListenerTest {
     public void timerTest() {
         try {
             reg.addEventListener(getListener());
-            Timer t = reg.timer("test.testTimer");
+            Timer t = reg.timer("testTimer");
             Thread.sleep(1000);
             t.stop();
             Thread.sleep(10000);
@@ -166,7 +182,7 @@ abstract public class BaseListenerTest {
     public void eventTest() {
         try {
             reg.addEventListener(getListener());
-            reg.event("test.event");
+            reg.event("event");
             Thread.sleep(1000);
         }
         catch(Exception e) {
@@ -178,7 +194,7 @@ abstract public class BaseListenerTest {
     public void eventTestWithTags() {
         try {
             reg.addEventListener(getListener());
-            reg.eventWithTags("test.event")
+            reg.eventWithTags("event")
                 .addTag("customer","customer-x")
                 .addTag("queue", "foobar-queue")
                 .build();
@@ -195,7 +211,7 @@ abstract public class BaseListenerTest {
         try {
             reg.addEventListener(getListener());
             Random r = new Random();
-            reg.scheduleGauge("test.test-gauge", 1, () -> {return r.nextInt(100);});
+            reg.scheduleGauge("test-gauge", 1, () -> {return r.nextInt(100);});
             Thread.sleep(5000);
         }
         catch(Exception e) {
@@ -210,7 +226,7 @@ abstract public class BaseListenerTest {
             Map<String,String> tags = new HashMap<>();
             tags.put("customer", "customer-X");
             tags.put("queue", "fastQueue");
-            reg.scheduleGauge("test.test-gauge", 1, new Gauge<Double>() {
+            reg.scheduleGauge("test-gauge", 1, new Gauge<Double>() {
 
                 Random r = new Random();
                 @Override
@@ -236,7 +252,7 @@ abstract public class BaseListenerTest {
             reg.addEventListener(getListener());
             Map<String,String> tags = new HashMap<>();
             tags.put("core", "0");
-            reg.scheduleGauge("test.cpu-gauge", 1, new Gauge<Integer>() {
+            reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
 
                 Random r = new Random();
                 @Override
@@ -251,7 +267,7 @@ abstract public class BaseListenerTest {
             });
             Thread.sleep(5000);
             // recreate same gauge - we should not see 'double gauge' running..since is the same ident
-            reg.scheduleGauge("test.cpu-gauge", 1, new Gauge<Integer>() {
+            reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
 
                 Random r = new Random();
                 @Override
@@ -268,7 +284,7 @@ abstract public class BaseListenerTest {
             Map<String,String> tagscore2 = new HashMap<>();
             tagscore2.put("core", "1");
             // we should see the test-gauge-2 at same interval
-            reg.scheduleGauge("test.cpu-gauge", 1, new Gauge<Integer>() {
+            reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
 
                 Random r = new Random();
                 @Override

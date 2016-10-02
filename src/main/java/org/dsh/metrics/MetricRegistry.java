@@ -10,15 +10,27 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MetricRegistry {
+	private final String prefix;
     private final Map<String,String> tags;
     private final Map<MetricKey, Counter> counters = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
-
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10);
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<String,String>();
+        private final String prefix;
+
+        /** @param applicationDomain - application Domain (service team)
+         *  @param application  - application name
+         *  A prefix for each metric will be generated, <applicationDomain>.<application>.
+         *
+         *  */
+        public Builder(String applicationDomain, String application) {
+        	if (applicationDomain == null || application == null)
+        		throw new IllegalArgumentException("applicationDomain and/or application cannot be null");
+        	prefix = applicationDomain + "." + application + ".";
+        }
 
         public Builder addTag(String tag, String value) {
             tags.put(tag, value);
@@ -27,18 +39,24 @@ public class MetricRegistry {
 
         public MetricRegistry build() {
             if (tags.size() > 0) {
-                return new MetricRegistry(tags);
+                return new MetricRegistry(prefix, tags);
             }
-            return new MetricRegistry();
+            return new MetricRegistry(prefix);
         }
     }
 
-    MetricRegistry(Map<String,String> tags) {
+    MetricRegistry(String prefix, Map<String,String> tags) {
+    	this.prefix = prefix;
         this.tags = tags;
     }
 
-    MetricRegistry() {
+    MetricRegistry(String prefix) {
+    	this.prefix = prefix;
         this.tags = null;
+    }
+
+    public String getPrefix() {
+    	return prefix;
     }
 
     public Map<String,String> getTags() {
@@ -51,6 +69,14 @@ public class MetricRegistry {
 
     public Timer.Builder timerWithTags(String name) {
     	return new Timer.Builder(name, this);
+    }
+
+    public Timer timer(String name, String...tags) {
+    	return timer(name, Util.buildTags(tags));
+    }
+
+    public Timer timer(String name, Map<String,String> tags) {
+    	return new Timer(name, this, tags).start();
     }
 
     /** Counters not recommended for real use, but may be
@@ -70,6 +96,26 @@ public class MetricRegistry {
         return c;
     }
 
+    public Counter counter(String name, String... tags) {
+    	return counter(name, Util.buildTags(tags));
+    }
+
+    public Counter counter(String name, Map<String,String> tags){
+    	MetricKey key = new MetricKey(name,tags);
+    	Counter c = getCounters().get(key);
+        if (c == null){
+            synchronized (getCounters()) {
+                c = getCounters().get(key);
+                if (c == null) {
+                    Counter tmp = new Counter(name, this, tags);
+                    getCounters().put(new MetricKey(name),tmp);
+                    return tmp;
+                }
+            }
+        }
+        return c;
+    }
+
     /** Counters not recommended for real use, but may be
      * useful for testing/early integration.
      * Counters with tags are extra expensive. */
@@ -79,16 +125,35 @@ public class MetricRegistry {
     }
 
     public void event(String name) {
-        dispatchEvent(new LongEvent(name, tags, System.currentTimeMillis(),1));
+        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),1));
+    }
+
+    public void event(String name, String...customTags) {
+        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), System.currentTimeMillis(),1));
+    }
+
+    public void event(String name, Map<String,String> customTags) {
+    	Map<String,String> ctags = new HashMap<String,String>();
+
+        if (tags != null) {
+        	ctags.putAll(tags);
+        }
+        if (customTags != null) {
+          	ctags.putAll(customTags);
+        }
+        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),1));
     }
 
     public EventImpl.Builder eventWithTags(String name) {
         return new EventImpl.Builder(name, this);
     }
 
-    public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge) {
-        MetricKey key = new MetricKey(name, gauge.getTags());
+    public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
+    	scheduleGauge(name,intervalInSeconds, gauge, Util.buildTags(tags));
+    }
 
+    public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, Map<String,String> tags) {
+        MetricKey key = new MetricKey(name, tags);
         if (!gauges.containsKey(key)) {
             synchronized (gauge) {
                 if (!gauges.containsKey(key)) {
@@ -101,6 +166,7 @@ public class MetricRegistry {
             }
         }
     }
+
 
     public void addEventListener(EventListener listener) {
         if (!listeners.contains(listener)) {
@@ -132,22 +198,22 @@ public class MetricRegistry {
         }
 
         if (number instanceof Double) {
-            e = new DoubleEvent(name, ctags, ts, number.doubleValue());
+            e = new DoubleEvent(prefix + name, ctags, ts, number.doubleValue());
         }
         else {
-            e = new LongEvent(name, ctags, ts, number.longValue());
+            e = new LongEvent(prefix + name, ctags, ts, number.longValue());
         }
         dispatchEvent(e);
     }
 
     void postEvent(String name, long ts, long value) {
-        EventImpl e = new LongEvent(name, tags, ts, value);
+        EventImpl e = new LongEvent(prefix + name, tags, ts, value);
         dispatchEvent(e);
 
     }
 
     void postEvent(String name, long ts, double value) {
-        EventImpl e = new DoubleEvent(name, tags, ts, value);
+        EventImpl e = new DoubleEvent(prefix + name, tags, ts, value);
         dispatchEvent(e);
     }
 

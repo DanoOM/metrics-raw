@@ -27,6 +27,19 @@ public class Timer extends MetricBase {
     	return duration;
     }
 
+    /** calculates the time from the startTime, and adds the provided tags,
+     * also triggers an event for Listeners */
+    public long stop(String... tags) {
+    	return stop(Util.buildTags(tags));
+    }
+
+    public long stop(Map<String,String> tags){
+    	long duration = System.currentTimeMillis() - startTime;
+    	this.tags.putAll(tags);
+    	registry.postEvent(name, startTime, tags, duration);
+    	return duration;
+    }
+
     public static class Builder {
     	private Timer timer;
         Builder(String name, MetricRegistry registry) {

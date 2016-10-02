@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.dsh.metrics.Counter;
 import org.dsh.metrics.EventListener;
 import org.dsh.metrics.Timer;
 import org.dsh.metrics.listeners.ConsoleListener;
@@ -19,10 +20,26 @@ public class ConsoleListenerTest extends BaseListenerTest {
 
     @Override
     public EventListener getListener() {
-        PrintStream ps = new PrintStream(new ByteArrayOutputStream());
-        return new ConsoleListener(ps, 100, 500);
+       // PrintStream ps = new PrintStream(new ByteArrayOutputStream());
+        return new ConsoleListener(System.out, 100, 500);
     }
 
+    @Override
+	@Test
+    public void counterTestTags1() {
+        try {
+        	String[] tgs = {"customer","xyz","queue","super"};
+            Counter c = reg.counter("counter1",tgs);
+            reg.addEventListener(getListener());
+            for (int i = 0; i < 10_000;i++) {
+                c.increment();
+            }
+            Thread.sleep(5000);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
     @Override
     @Test
     public void counterTest() {
@@ -95,7 +112,7 @@ public class ConsoleListenerTest extends BaseListenerTest {
             assertEquals("unexpected number of timer events!", 1, lines.length);
             String[] cols = lines[0].split(" ");
             assertEquals("maltformed event..", cols.length, 4);
-            assertTrue(cols[1].equals("testTimer"));
+            assertTrue(cols[1].equals("dsh-metrics.test.testTimer"));
             assertTags(cols[2], reg.getTags(), t.getTags());
             assertTrue(cols[2].equals("host=host-1.xyz.org,cust=customer-x,dc=dataCenter1"));
             assertTrue(Integer.parseInt(cols[3]) >= 1000 && Integer.parseInt(cols[3]) < 1002); // could be off slightly..
