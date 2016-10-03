@@ -35,6 +35,9 @@ public class Timer extends MetricBase {
 
     public long stop(Map<String,String> tags){
     	long duration = System.currentTimeMillis() - startTime;
+    	if (this.tags == null){
+    	    this.tags = new HashMap<>();
+    	}
     	this.tags.putAll(tags);
     	registry.postEvent(name, startTime, tags, duration);
     	return duration;

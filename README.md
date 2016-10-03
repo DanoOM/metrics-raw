@@ -39,6 +39,7 @@ Scheduling the 'same' gauge more then once, is not allowed, and the method will 
 
 ## Timer
 Timers are automatically started when constructed.  calling stop on the timer will calculate the duration of time since startTime, any registered EventListeners will be updated.
+Timers when stopped can optionally accept additional tags.
 
 ## Counter
 Counters, simply allows you increment/decrement.  When the counter is incremented/decremented a Event be sent to any registered EventListener.  Counters are NOT recommended for actual production use, as the 'graphing' system should be counting events.

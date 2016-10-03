@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 public class ConsoleListenerTest extends BaseListenerTest {
 
     @Override
-    public EventListener getListener() {
+    public EventListener newListener() {
        // PrintStream ps = new PrintStream(new ByteArrayOutputStream());
         return new ConsoleListener(System.out, 100, 500);
     }
@@ -30,8 +30,8 @@ public class ConsoleListenerTest extends BaseListenerTest {
         try {
         	String[] tgs = {"customer","xyz","queue","super"};
             Counter c = reg.counter("counter1",tgs);
-            reg.addEventListener(getListener());
-            for (int i = 0; i < 10_000;i++) {
+            reg.addEventListener(newListener());
+            for (int i = 0; i < 1000;i++) {
                 c.increment();
             }
             Thread.sleep(5000);
@@ -48,10 +48,10 @@ public class ConsoleListenerTest extends BaseListenerTest {
             EventListener listener = new ConsoleListener(new PrintStream(stream), 100, 500);
             reg.counter("counter1");
             reg.addEventListener(listener);
-            for (int i = 0; i < 10_000;i++) {
+            for (int i = 0; i < 1_000;i++) {
                 reg.counter("counter1").increment();
             }
-            pause(listener, 0, 5000);
+            pauseForBuffer(listener, 0, 5000);
 
             String results = new String(stream.toByteArray(), StandardCharsets.UTF_8);
             String[] lines = results.split(System.lineSeparator());
@@ -106,7 +106,7 @@ public class ConsoleListenerTest extends BaseListenerTest {
                          .build();
             Thread.sleep(1000);
             t.stop();
-            pause(listener, 0, 1000);
+            pauseForBuffer(listener, 0, 1000);
             String results = new String(stream.toByteArray(), StandardCharsets.UTF_8);
             String[] lines = results.split(System.lineSeparator());
             assertEquals("unexpected number of timer events!", 1, lines.length);
@@ -122,11 +122,10 @@ public class ConsoleListenerTest extends BaseListenerTest {
         }
     }
 
-    @Override
     @Test
     public void timerTest() {
         try {
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             Timer t = reg.timer("testTimer");
             Thread.sleep(1000);
             t.stop();

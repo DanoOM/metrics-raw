@@ -8,7 +8,7 @@ import org.testng.annotations.Test;
 public class KairosListenerTest extends BaseListenerTest {
 
     @Override
-    public EventListener getListener() {
+    public EventListener newListener() {
         return new KairosDBListener("http://wdc-tst-masapp-001:8080",
                                     "root",
                                     "root");
@@ -19,7 +19,7 @@ public class KairosListenerTest extends BaseListenerTest {
     @Test
     public void timerWithTagsTest() {
         try {
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             for (int i = 0; i < 100 ; i++) {
                 Timer t = reg.timerWithTags("test.testTimer")
                              .addTag("cust", "customer-x")

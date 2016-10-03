@@ -51,13 +51,11 @@ public class ConsoleListener implements EventListener, Runnable {
     @Override
     public void run() {
         try {
-            List<Event> dispatchList = new ArrayList<>(100);
+            List<Event> dispatchList = new ArrayList<>(1000);
             do {
-                if (0 == queue.drainTo(dispatchList, batchSize - 1)){
-                    Event e = queue.take();
-                    dispatchList.add(e);
-                }
-                dispatchList.stream().forEach(e -> outStream.println(e));
+                dispatchList.add(queue.take());
+                queue.drainTo(dispatchList, batchSize - 1);
+                dispatchList.stream().forEach(event -> outStream.println(event));
                 dispatchList.clear();
             } while(true);
         }

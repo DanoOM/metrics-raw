@@ -5,7 +5,7 @@ import java.util.Map;
 
 abstract class MetricBase implements Metric {
     protected final String name;
-    protected final Map<String,String> tags;
+    protected Map<String,String> tags;
     protected final MetricRegistry registry;
 
     MetricBase(String name, MetricRegistry registry, Map<String,String> tags) {
