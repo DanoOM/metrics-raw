@@ -7,11 +7,11 @@ import java.util.Map;
 public interface Gauge<T> extends Metric {
     T getValue();
 
+    @Override
     default public Map<String,String> getTags() {
         return new HashMap<>();
     }
 
-    @Override
     default public MetricRegistry getMetricRegistry() {
         return null;
     }
