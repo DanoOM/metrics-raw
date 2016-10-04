@@ -10,9 +10,8 @@ class Util {
     	if (tags.length % 2 != 0) {
     		throw new IllegalArgumentException("corrupted tags arguments, must be name/value,name/value, tags provided not divisiable by 2!");
     	}
-    	int iterations = tags.length / 2;
-    	for (int i = 0; i < iterations; ) {
-    		map.put(tags[0],tags[++i]);
+    	for (int i = 0; i < tags.length; ) {
+    		map.put(tags[i++],tags[i++]);
     	}
     	return map;
 	}
