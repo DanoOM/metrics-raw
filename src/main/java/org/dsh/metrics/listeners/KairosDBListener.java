@@ -16,7 +16,7 @@ import org.kairosdb.client.builder.MetricBuilder;
 
 public class KairosDBListener implements EventListener, Runnable {
 
-    private BlockingQueue<Event> queue = new ArrayBlockingQueue<>(1000);
+    private final BlockingQueue<Event> queue;
     private final int batchSize;
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
     private Thread runThread;
@@ -41,6 +41,7 @@ public class KairosDBListener implements EventListener, Runnable {
                             String pd,
                             int batchSize,
                             long offerTimeMillis) {
+        this.queue = new ArrayBlockingQueue<>(1000);
         if (batchSize > 1) {
             this.batchSize = batchSize;
         }

@@ -8,7 +8,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.dsh.metrics.Event;
-import org.dsh.metrics.EventImpl;
 import org.dsh.metrics.EventListener;
 
 /**
@@ -20,7 +19,7 @@ import org.dsh.metrics.EventListener;
  * */
 public class ConsoleListener implements EventListener, Runnable {
 
-    private BlockingQueue<Event> queue = new ArrayBlockingQueue<>(1000);
+    private final BlockingQueue<Event> queue;
     private final int batchSize;
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
     private Thread runThread;
@@ -35,6 +34,7 @@ public class ConsoleListener implements EventListener, Runnable {
     }
 
     public ConsoleListener(PrintStream out, int batchSize, long offerTimeMillis) {
+        this.queue = new ArrayBlockingQueue<>(1000);
         if (batchSize > 1) {
             this.batchSize = batchSize;
         }
