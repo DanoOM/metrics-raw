@@ -1,5 +1,7 @@
 package org.dsh.metrics.tests;
 
+import static org.testng.AssertJUnit.assertEquals;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -14,8 +16,8 @@ import org.testng.annotations.Test;
 
 
 // @todo update to properly assert..
-abstract public class BaseListenerTest {
-    abstract public EventListener getListener();
+abstract public class BaseListenerTest extends BaseTest {
+    abstract public EventListener newListener();
 
     protected MetricRegistry reg;
 
@@ -24,16 +26,32 @@ abstract public class BaseListenerTest {
         if (reg !=null) {
             reg.removeAllEventListeners();
         }
-        reg = new MetricRegistry(getTags("dataCenter1", "host-1.xyz.org"));
+        reg = getRegistry();
     }
 
     @Test
     public void counterTest() {
         try {
             reg.counter("counter1");
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             for (int i = 0; i < 10_000;i++) {
-                reg.counter("counter1").increment();
+                reg.counter("counter_noTags").increment();
+            }
+            Thread.sleep(5000);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void counterTestTags1() {
+        try {
+        	String[] tgs = {"customer","xyz","queue","super"};
+            reg.counter("counter1",tgs);
+            reg.addEventListener(newListener());
+            for (int i = 0; i < 10_000;i++) {
+                reg.counter("counter_withTags").increment();
             }
             Thread.sleep(5000);
         }
@@ -47,11 +65,13 @@ abstract public class BaseListenerTest {
     public void counterNoTagsWithNoLookupTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            Counter c = reg.counter("counter1");
-            reg.addEventListener(getListener());
+            Counter c = reg.counter("counter_withTags_nolookup");
+            EventListener listener = newListener();
+            reg.addEventListener(listener);
             for (int i = 0; i < 10_000; i++) {
                 c.increment();
             }
+            pauseForBuffer(listener, 0, 1000);
             Thread.sleep(1000);
         }
         catch(Exception e) {
@@ -62,8 +82,8 @@ abstract public class BaseListenerTest {
     public void counterNoTagsWithLookupTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            reg.counter("counter1");
-            reg.addEventListener(getListener());
+            reg.counter("counter_noTags_withLookup");
+            reg.addEventListener(newListener());
             for (int i = 0; i < 10_000; i++) {
                 reg.counter("counter1").increment();;
             }
@@ -78,10 +98,10 @@ abstract public class BaseListenerTest {
     public void counterWithTagsReuseTest() {
         // counter is constructed, then each use of counter, Builder is used to retrieve it.
         try {
-            Counter c = reg.counterWithTags("counter1")
+            Counter c = reg.counterWithTags("counter_withTags_noLookup")
                .addTag("customer","customer-x")
                .addTag("queue","superQueue").build();
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             for (int i = 0; i < 10_000; i++) {
                 c.increment();
             }
@@ -100,7 +120,7 @@ abstract public class BaseListenerTest {
             reg.counterWithTags("counter1")
                .addTag("customer","customer-x")
                .addTag("queue","someQueue").build();
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             for (int i = 0; i < 10_000; i++) {
                 reg.counterWithTags("counter1")
                     .addTag("customer","customer_x")
@@ -117,12 +137,20 @@ abstract public class BaseListenerTest {
     @Test
     public void timerWithTagsTest() {
         try {
-            reg.addEventListener(getListener());
-            Timer t = reg.timerWithTags("testTimer")
-            			 .addTag("cust", "customer-x")
-            			 .build();
-            Thread.sleep(1000);
-            t.stop();
+            reg.addEventListener(newListener());
+            for (int i = 0; i < 100 ; i++) {
+                Timer t = reg.timerWithTags("testTimer")
+                			 .addTag("cust", "customer-x")
+                			 .build();
+                if (i % 5 == 0) {
+                    Thread.sleep(100);
+                }
+                else {
+                    Thread.sleep(10);
+                }
+                t.stop();
+            }
+
             Thread.sleep(10000);
         }
         catch(Exception e) {
@@ -131,12 +159,12 @@ abstract public class BaseListenerTest {
     }
 
     @Test
-    public void timerTest() {
+    public void timerStopWithTagsTest() {
         try {
-            reg.addEventListener(getListener());
-            Timer t = reg.timer("testTimer");
+            reg.addEventListener(newListener());
+            Timer t = reg.timer("testTimerStopWithTags");
             Thread.sleep(1000);
-            t.stop();
+            t.stop("CUSTOM_TAG","TEST-TAG");
             Thread.sleep(10000);
         }
         catch(Exception e) {
@@ -147,8 +175,8 @@ abstract public class BaseListenerTest {
     @Test
     public void eventTest() {
         try {
-            reg.addEventListener(getListener());
-            reg.event("mytest.event");
+            reg.addEventListener(newListener());
+            reg.event("event");
             Thread.sleep(1000);
         }
         catch(Exception e) {
@@ -159,8 +187,8 @@ abstract public class BaseListenerTest {
     @Test
     public void eventTestWithTags() {
         try {
-            reg.addEventListener(getListener());
-            reg.eventWithTags("mytest.event")
+            reg.addEventListener(newListener());
+            reg.eventWithTags("event")
                 .addTag("customer","customer-x")
                 .addTag("queue", "foobar-queue")
                 .build();
@@ -175,17 +203,9 @@ abstract public class BaseListenerTest {
     @Test
     public void gaugeTest() {
         try {
-            reg.addEventListener(getListener());
-            /*reg.scheduleGauge("test-gauge", 1, new Gauge<Integer>() {
-                Random r = new Random();
-                @Override
-                public Integer getValue() {
-                    return r.nextInt();
-                }
-            });*/
+            reg.addEventListener(newListener());
             Random r = new Random();
             reg.scheduleGauge("test-gauge", 1, () -> {return r.nextInt(100);});
-
             Thread.sleep(5000);
         }
         catch(Exception e) {
@@ -196,7 +216,7 @@ abstract public class BaseListenerTest {
     @Test
     public void gaugeWithTagsTest() {
         try {
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             Map<String,String> tags = new HashMap<>();
             tags.put("customer", "customer-X");
             tags.put("queue", "fastQueue");
@@ -223,7 +243,7 @@ abstract public class BaseListenerTest {
     @Test
     public void gaugeRecreatedWithTagsTest() {
         try {
-            reg.addEventListener(getListener());
+            reg.addEventListener(newListener());
             Map<String,String> tags = new HashMap<>();
             tags.put("core", "0");
             reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
@@ -273,17 +293,26 @@ abstract public class BaseListenerTest {
             });
 
             Thread.sleep(5000);
-
-
-
         }
         catch(Exception e) {
             e.printStackTrace();
         }
     }
 
+    public void pauseForBuffer(EventListener listener, int expectedBufferSize, long timeout) {
+        try {
+            long startTime = System.currentTimeMillis();
+            while (listener.eventsBuffered() != expectedBufferSize && (System.currentTimeMillis() - startTime < timeout)) {
+                Thread.sleep(100);
+            }
+            if (listener.eventsBuffered() == expectedBufferSize)
+                return;
+        }
+        catch(Exception e) {
 
-
+        }
+        assertEquals("buffered events mismatch!",expectedBufferSize,listener.eventsBuffered());
+    }
 
     private Map<String,String> getTags(String dataCenter, String host) {
         Map<String,String> tags = new HashMap<>();

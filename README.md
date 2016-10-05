@@ -7,7 +7,7 @@ The api is heavily influenced by dropwizard's great metrics api, and uses vary s
 ## MetricRegistry
 The MetricRegistry is used to create/attach metric objects.  
 The MetricRegsitry allows users to attach 'global' tags, which will be sent with every metric to the backend datastore.
-The tags allow allow systems like grafana to query/aggregate metrics by tag, or not.
+The tags allow systems like grafana to query/aggregate metrics by tag.
 
 The basic methods of interest:
 
@@ -18,7 +18,16 @@ The basic methods of interest:
 5. **eventWithTags(name)** - returns a Builder, allowing tags to be added, calling build() will dispatch the event to any registered EventListener
 6. **counter(name)** - get/create a counter with the associated name.
 7. **counterWithTags(name)** - returns a builder, where you can attach tags.  The builder will either return a new Counter, or return a pre-existing counter if the name/tags match.
-8. **scheduleGauge(name, interval,Gauge)** - schedules the gauge to be invoked on a periodic interval, (based on the last run) 
+8. **scheduleGauge(name, interval, Gauge)** - schedules the gauge to be invoked on a periodic interval, (based on the last run) 
+
+At a high level metrics can be constructed/referenced in 4 ways:
+
+* metricRegistry.metric(String name) - create/get metric identified by name
+* metricRegistry.metric(String name,string...tags) - create/get metric identified by name and tags (where tags is tagName/value..)
+* metricRegistry.metric(String name,Map tags) - create/get metric identified by name and tags where tags is map of tagName/value
+* metricRegsitry.metricWithTags(name).addTag..build() - create/get metric identified by name/tags, using a builder 
+
+I expect 1 or 2 of the approaches with tags to be removed.
 
 ## Event
 We have no meters in this api, since we send the raw metric, as such we simply have 'events' in place of meters.
@@ -30,6 +39,7 @@ Scheduling the 'same' gauge more then once, is not allowed, and the method will 
 
 ## Timer
 Timers are automatically started when constructed.  calling stop on the timer will calculate the duration of time since startTime, any registered EventListeners will be updated.
+Timers when stopped can optionally accept additional tags.
 
 ## Counter
 Counters, simply allows you increment/decrement.  When the counter is incremented/decremented a Event be sent to any registered EventListener.  Counters are NOT recommended for actual production use, as the 'graphing' system should be counting events.

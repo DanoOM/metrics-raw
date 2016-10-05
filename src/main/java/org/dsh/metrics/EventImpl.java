@@ -50,7 +50,7 @@ public abstract class EventImpl implements Event {
 
         public Builder(String name, MetricRegistry registry) {
             this.registry = registry;
-            this.event = new LongEvent(name, new HashMap<String,String>(), System.currentTimeMillis(),1l);
+            this.event = new LongEvent(registry.getPrefix() + name, new HashMap<String,String>(), System.currentTimeMillis(),1l);
         }
 
         public Builder addTag(String tag, String value) {

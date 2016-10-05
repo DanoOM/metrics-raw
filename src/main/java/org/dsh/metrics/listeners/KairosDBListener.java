@@ -1,8 +1,6 @@
 package org.dsh.metrics.listeners;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -65,23 +63,23 @@ public class KairosDBListener implements EventListener, Runnable {
 
     @Override
     public void run() {
-        try {
-            final List<Event> dispatchList = new ArrayList<>(100);
-            do {
-                if (0 == queue.drainTo(dispatchList, batchSize - 1)) {
-                    Event e = queue.take();
-                    dispatchList.add(e);
-                }
-                MetricBuilder payload = buildPayload(dispatchList);
-                kairosDb.pushMetrics(payload);
-            } while(true);
-        }
-        catch(IOException | URISyntaxException ex) {
-            // swallow..
-        }
-        catch(InterruptedException ie) {
-            // assuming system exist.
-        }
+        final List<Event> dispatchList = new ArrayList<>(100);
+        do {
+            try {
+                dispatchList.add(queue.take());
+                queue.drainTo(dispatchList, batchSize - 1);
+                kairosDb.pushMetrics(buildPayload(dispatchList));
+            }
+            catch(InterruptedException ie) {
+                break;
+            }
+            catch(Exception ex) {
+                // swallow
+            }
+            finally {
+                dispatchList.clear();
+            }
+        } while(true);
     }
 
     private MetricBuilder buildPayload(List<Event> events) {
@@ -100,6 +98,11 @@ public class KairosDBListener implements EventListener, Runnable {
             }
         }
         return mb;
+    }
+
+    @Override
+    public int eventsBuffered() {
+        return queue.size();
     }
 
     @Override

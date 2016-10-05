@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
-public class Counter extends MetricImpl {
+public class Counter extends MetricBase {
     private final LongAdder adder = new LongAdder();
 
     public Counter(String name, MetricRegistry registry) {
