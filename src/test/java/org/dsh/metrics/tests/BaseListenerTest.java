@@ -217,80 +217,31 @@ abstract public class BaseListenerTest extends BaseTest {
     public void gaugeWithTagsTest() {
         try {
             reg.addEventListener(newListener());
-            Map<String,String> tags = new HashMap<>();
+            Map<String, String> tags = new HashMap<>();
             tags.put("customer", "customer-X");
             tags.put("queue", "fastQueue");
-            reg.scheduleGauge("test-gauge", 1, new Gauge<Double>() {
-
-                Random r = new Random();
-                @Override
-                public Double getValue() {
-                    return r.nextDouble();
-                }
-
-                @Override
-                public Map<String,String> getTags() {
-                    return tags;
-                }
-            });
+            reg.scheduleGauge("test-gauge", 1, () -> new Random().nextDouble(), tags);
             Thread.sleep(5000);
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
+    
     @Test
     public void gaugeRecreatedWithTagsTest() {
         try {
             reg.addEventListener(newListener());
             Map<String,String> tags = new HashMap<>();
             tags.put("core", "0");
-            reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
-
-                Random r = new Random();
-                @Override
-                public Integer getValue() {
-                    return r.nextInt();
-                }
-
-                @Override
-                public Map<String,String> getTags() {
-                    return tags;
-                }
-            });
+            reg.scheduleGauge("cpu-gauge", 1, () -> new Random().nextInt(), tags);
             Thread.sleep(5000);
             // recreate same gauge - we should not see 'double gauge' running..since is the same ident
-            reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
-
-                Random r = new Random();
-                @Override
-                public Integer getValue() {
-                    return r.nextInt();
-                }
-
-                @Override
-                public Map<String,String> getTags() {
-                    return tags;
-                }
-            });
+            reg.scheduleGauge("cpu-gauge", 1, () -> new Random().nextInt(), tags);
 
             Map<String,String> tagscore2 = new HashMap<>();
             tagscore2.put("core", "1");
             // we should see the test-gauge-2 at same interval
-            reg.scheduleGauge("cpu-gauge", 1, new Gauge<Integer>() {
-
-                Random r = new Random();
-                @Override
-                public Integer getValue() {
-                    return r.nextInt();
-                }
-
-                @Override
-                public Map<String,String> getTags() {
-                    return tagscore2;
-                }
-            });
+            reg.scheduleGauge("cpu-gauge", 1, () -> new Random().nextInt(), tagscore2);
 
             Thread.sleep(5000);
         }
