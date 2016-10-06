@@ -12,7 +12,6 @@ public class JvmMetrics {
         final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
         registry.scheduleGauge("jvm.processCPU", intervalInSeconds, () -> {return osBean.getProcessCpuLoad();});
         registry.scheduleGauge("jvm.systemCPU", intervalInSeconds, () -> {return osBean.getSystemCpuLoad();});
-        registry.scheduleGauge("jvm.systemCPULoad", intervalInSeconds, () -> {return osBean.getSystemCpuLoad();});
         
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         registry.scheduleGauge("jvm.heapUsed",intervalInSeconds, () -> {return memoryBean.getHeapMemoryUsage().getUsed();});
