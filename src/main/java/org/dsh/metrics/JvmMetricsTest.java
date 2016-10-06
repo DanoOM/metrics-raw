@@ -18,8 +18,7 @@ public class JvmMetricsTest {
 
         reg.addEventListener(new ConsoleListener(System.out));
 
-        new JvmMetrics(reg, 4);
-        //reg.scheduleGauge("ONE_TPS", 1, () -> {return 1;});
+        JvmMetrics.addMetrics(reg, 4);
         while(true) { pause(1000); }
     }
 

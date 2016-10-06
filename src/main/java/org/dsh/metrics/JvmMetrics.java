@@ -8,7 +8,7 @@ import java.lang.management.ThreadMXBean;
 
 public class JvmMetrics {
 
-    public JvmMetrics(MetricRegistry registry, int intervalInSeconds) {
+    public static void addMetrics(MetricRegistry registry, int intervalInSeconds) {
         final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
         registry.scheduleGauge("jvm.processCPU", intervalInSeconds, () -> {return osBean.getProcessCpuLoad();});
         registry.scheduleGauge("jvm.systemCPU", intervalInSeconds, () -> {return osBean.getSystemCpuLoad();});
