@@ -12,6 +12,9 @@ import org.dsh.metrics.MetricRegistry;
 import org.dsh.metrics.listeners.KairosDBListener;
 import org.kairosdb.client.HttpClient;
 
+/** Metric Generators is used for 'testing', aka generating metrics
+ *  This generator is specific to KairosDB., and will be moved library metric-raw-kairosdb in the future.
+ * */
 public class MetricGenerator {
 
     public static void main(String[] args) {
@@ -32,7 +35,7 @@ public class MetricGenerator {
             final int eventSignatures = getIntArg(args, "e", 1);    // unique Event Names/thread        (event<#>)
             final int tagCount = getIntArg(args, "tagCount", 1);    // even event generated will have a random number of tags (upto this number)
             final int tagValues = getIntArg(args, "tagValues", 5);  // random value per tag
-            final int writeTps = getIntArg(args, "tps", 500);      // tps target per host
+            final int writeTps = getIntArg(args, "tps", 500);       // tps target per host
             final int querytps = getIntArg(args, "qtps", 0);        // tps target per host
 
             EventGenerator[] writers = new EventGenerator[hosts];
@@ -54,7 +57,7 @@ public class MetricGenerator {
             for (int i = 0; i < hosts; i++) {
                 String hostname = "host"+i;
                 MetricRegistry mr = new MetricRegistry.Builder(service,app)
-                        .addTag("host",hostname)
+                        .withHost(hostname)
                         .build();
                 if (writeTps > 0) {
                     writers[i] = new EventGenerator(hostname,

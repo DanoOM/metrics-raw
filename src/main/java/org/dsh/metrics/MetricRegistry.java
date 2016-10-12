@@ -32,6 +32,16 @@ public class MetricRegistry {
         	prefix = applicationDomain + "." + application + ".";
         }
 
+        public Builder withHost(String host) {
+            tags.put("host", host);
+            return this;
+        }
+
+        public Builder withDatacenter(String datacenter){
+            tags.put("datacenter", datacenter);
+            return this;
+        }
+
         public Builder addTag(String tag, String value) {
             tags.put(tag, value);
             return this;

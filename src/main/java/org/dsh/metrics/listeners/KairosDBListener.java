@@ -17,7 +17,17 @@ import org.kairosdb.client.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Will be moved library metric-raw-kairosdb in the future.
+ * Notes: while all constructors take username/password, these are currently not used.
+ *
+ * Upload strategy:
+ * All events will be uploaded in batch: batchSize (default: 100), or every 1 second, whichever comes first.
+ * A status update will be logged at level info, once every 5 minutes, indicating the number of the number http calls (dispatchCount), as well
+ * the number of metric datapoints, the number or errors (with details on the last error that occured).
+ *
+ *
+ * */
 public class KairosDBListener implements EventListener, Runnable {
 
     private final BlockingQueue<Event> queue;
@@ -69,8 +79,9 @@ public class KairosDBListener implements EventListener, Runnable {
     @Override
     public void run() {
         final List<Event> dispatchList = new ArrayList<>(batchSize);
-        long lastResetTime = System.currentTimeMillis();
-        long dispatchCount = 0;
+        long lastResetTime = 0;
+        long httpCalls = 0;
+        long metricCount = 0;
         long errorCount = 0;
         long exceptionTime = 0;
         Response lastError = null;
@@ -79,6 +90,7 @@ public class KairosDBListener implements EventListener, Runnable {
             try {
                 // block until we have at least 1 metric
                 dispatchList.add(queue.take());
+
                 // try to always send a minimum of x datapoints per call.
                 long takeTime = System.currentTimeMillis();
                 do {
@@ -89,8 +101,9 @@ public class KairosDBListener implements EventListener, Runnable {
                     // flush every second or until we have seen batchSize Events
                 } while(dispatchList.size() < batchSize || (System.currentTimeMillis() - takeTime < 1000));
 
-                dispatchCount += dispatchList.size();
+                metricCount += dispatchList.size();
                 Response r = kairosDb.pushMetrics(buildPayload(dispatchList));
+                httpCalls++;
                 if (r.getStatusCode() != 204 ){
                     lastError = r;
                     errorCount++;
@@ -104,16 +117,15 @@ public class KairosDBListener implements EventListener, Runnable {
                             sb.append(s);
                             sb.append("]");
                         }
-                        log.info("Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}",dispatchCount, errorCount, lastError.getStatusCode(), sb.toString());
-                        System.out.println("Dispatch count: " + dispatchCount + " " + " errorCount:"+errorCount + " Last Error Status Code:" +lastError.getStatusCode()+ " Error Details:" + sb.toString());
+                        log.info("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
                         lastError = null;
                     }
                     else {
-                        log.info("Dispatch count: ", dispatchCount);
-                        System.out.println("Dispatch count: " + dispatchCount + " " + " errorCount:"+errorCount);
+                        log.info("Http calls: Dispatch count: ", httpCalls, metricCount);
                     }
+                    httpCalls = 0;
                     errorCount = 0;
-                    dispatchCount = 0;
+                    metricCount = 0;
                     lastResetTime = System.currentTimeMillis();
                 }
             }
