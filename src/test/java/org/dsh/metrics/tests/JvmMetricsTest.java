@@ -17,7 +17,7 @@ public class JvmMetricsTest extends BaseTest {
                                                   "root",
                                                   "root"));
 
-        new JvmMetrics(reg, 1);
+        JvmMetrics.addMetrics(reg, 1);
         while(true) { pause(1000); }
     }
 }
