@@ -45,6 +45,7 @@ public class EventQueryGenerator extends Thread implements Runnable {
 
     @Override
     public void run() {
+        try{
         Random r = new Random();
         System.out.println("query generator started: targetTPS:"+tps);
 
@@ -94,6 +95,10 @@ public class EventQueryGenerator extends Thread implements Runnable {
             // sleep for the remaining time of this 1 second period.
             long sleepTime = startTime - System.currentTimeMillis();
             pause(sleepTime);
+        }
+        }
+        catch(Exception e){
+            e.printStackTrace();
         }
     }
 

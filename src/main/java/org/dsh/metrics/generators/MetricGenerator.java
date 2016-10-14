@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.dsh.metrics.MetricRegistry;
+import org.dsh.metrics.listeners.DropWizardListener;
 import org.dsh.metrics.listeners.KairosDBListener;
 import org.kairosdb.client.HttpClient;
 
@@ -54,11 +55,15 @@ public class MetricGenerator {
             System.out.println("TPS/thread:         " + writeTps);
             System.out.println("Query-TPS/thread:   " + querytps);
 
+
             for (int i = 0; i < hosts; i++) {
                 String hostname = "host"+i;
                 MetricRegistry mr = new MetricRegistry.Builder(service,app)
                         .withHost(hostname)
                         .build();
+                DropWizardListener listener = new DropWizardListener("wdc-tst-metrics-001.openmarket.com", 2003, 20);
+                mr.addEventListener(listener);
+
                 if (writeTps > 0) {
                     writers[i] = new EventGenerator(hostname,
                                                 eventSignatures,
@@ -100,6 +105,10 @@ public class MetricGenerator {
                                                             user,
                                                             pd,
                                                             100));
+                    // Graphite dropwizard listener
+
+
+
                     writers[i].start();
                 }
             }

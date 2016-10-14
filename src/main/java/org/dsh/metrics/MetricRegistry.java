@@ -135,11 +135,11 @@ public class MetricRegistry {
     }
 
     public void event(String name) {
-        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),1));
+        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),1));
     }
 
     public void event(String name, String...customTags) {
-        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), System.currentTimeMillis(),1));
+        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),1));
     }
 
     public void event(String name, Map<String,String> customTags) {
@@ -151,11 +151,11 @@ public class MetricRegistry {
         if (customTags != null) {
           	ctags.putAll(customTags);
         }
-        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),1));
+        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),1));
     }
 
     public EventImpl.Builder eventWithTags(String name) {
-        return new EventImpl.Builder(name, this);
+        return new EventImpl.Builder(name, this, EventType.Event);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -196,7 +196,11 @@ public class MetricRegistry {
         listeners.clear();
     }
 
-    void postEvent(String name, long ts, Map<String,String> customTags, Number number) {
+    public List<EventListener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
+    void postEvent(String name, long ts, Map<String,String> customTags, Number number, EventType type) {
         EventImpl e;
         Map<String,String> ctags = new HashMap<String,String>();
 
@@ -208,22 +212,22 @@ public class MetricRegistry {
         }
 
         if (number instanceof Double) {
-            e = new DoubleEvent(prefix + name, ctags, ts, number.doubleValue());
+            e = new DoubleEvent(prefix + name, ctags, type, ts, number.doubleValue());
         }
         else {
-            e = new LongEvent(prefix + name, ctags, ts, number.longValue());
+            e = new LongEvent(prefix + name, ctags, type, ts, number.longValue());
         }
         dispatchEvent(e);
     }
 
-    void postEvent(String name, long ts, long value) {
-        EventImpl e = new LongEvent(prefix + name, tags, ts, value);
+    void postEvent(String name, long ts, long value, EventType type) {
+        EventImpl e = new LongEvent(prefix + name, tags, type, ts, value);
         dispatchEvent(e);
 
     }
 
-    void postEvent(String name, long ts, double value) {
-        EventImpl e = new DoubleEvent(prefix + name, tags, ts, value);
+    void postEvent(String name, long ts, double value, EventType type) {
+        EventImpl e = new DoubleEvent(prefix + name, tags, type, ts, value);
         dispatchEvent(e);
     }
 
