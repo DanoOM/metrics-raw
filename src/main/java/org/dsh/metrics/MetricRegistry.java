@@ -135,23 +135,54 @@ public class MetricRegistry {
     }
 
     public void event(String name) {
-        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),1));
+        event(name,1);
+    }
+
+    public void event(String name, long value) {
+        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
+    }
+
+    public void event(String name, double value) {
+        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
     }
 
     public void event(String name, String...customTags) {
-        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),1));
+        event(name,1,customTags);
+    }
+
+    public void event(String name, long value, String...customTags) {
+        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
+    }
+    public void event(String name, double value, String...customTags) {
+        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
     }
 
     public void event(String name, Map<String,String> customTags) {
-    	Map<String,String> ctags = new HashMap<String,String>();
+        event(name,1,customTags);
+    }
+
+    public void event(String name, long value, Map<String,String> customTags) {
+        Map<String,String> ctags = new HashMap<String,String>();
 
         if (tags != null) {
-        	ctags.putAll(tags);
+            ctags.putAll(tags);
         }
         if (customTags != null) {
-          	ctags.putAll(customTags);
+            ctags.putAll(customTags);
         }
-        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),1));
+        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
+    }
+
+    public void event(String name, double value, Map<String,String> customTags) {
+        Map<String,String> ctags = new HashMap<String,String>();
+
+        if (tags != null) {
+            ctags.putAll(tags);
+        }
+        if (customTags != null) {
+            ctags.putAll(customTags);
+        }
+        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
     }
 
     public EventImpl.Builder eventWithTags(String name) {
