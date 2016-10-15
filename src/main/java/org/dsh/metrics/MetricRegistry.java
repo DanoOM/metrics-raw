@@ -32,6 +32,16 @@ public class MetricRegistry {
         	prefix = applicationDomain + "." + application + ".";
         }
 
+        public Builder withHost(String host) {
+            tags.put("host", host);
+            return this;
+        }
+
+        public Builder withDatacenter(String datacenter){
+            tags.put("datacenter", datacenter);
+            return this;
+        }
+
         public Builder addTag(String tag, String value) {
             tags.put(tag, value);
             return this;
@@ -125,27 +135,58 @@ public class MetricRegistry {
     }
 
     public void event(String name) {
-        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),1));
+        event(name,1);
+    }
+
+    public void event(String name, long value) {
+        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
+    }
+
+    public void event(String name, double value) {
+        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
     }
 
     public void event(String name, String...customTags) {
-        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), System.currentTimeMillis(),1));
+        event(name,1,customTags);
+    }
+
+    public void event(String name, long value, String...customTags) {
+        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
+    }
+    public void event(String name, double value, String...customTags) {
+        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
     }
 
     public void event(String name, Map<String,String> customTags) {
-    	Map<String,String> ctags = new HashMap<String,String>();
+        event(name,1,customTags);
+    }
+
+    public void event(String name, long value, Map<String,String> customTags) {
+        Map<String,String> ctags = new HashMap<String,String>();
 
         if (tags != null) {
-        	ctags.putAll(tags);
+            ctags.putAll(tags);
         }
         if (customTags != null) {
-          	ctags.putAll(customTags);
+            ctags.putAll(customTags);
         }
-        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),1));
+        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
+    }
+
+    public void event(String name, double value, Map<String,String> customTags) {
+        Map<String,String> ctags = new HashMap<String,String>();
+
+        if (tags != null) {
+            ctags.putAll(tags);
+        }
+        if (customTags != null) {
+            ctags.putAll(customTags);
+        }
+        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
     }
 
     public EventImpl.Builder eventWithTags(String name) {
-        return new EventImpl.Builder(name, this);
+        return new EventImpl.Builder(name, this, EventType.Event);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -186,7 +227,11 @@ public class MetricRegistry {
         listeners.clear();
     }
 
-    void postEvent(String name, long ts, Map<String,String> customTags, Number number) {
+    public List<EventListener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
+    void postEvent(String name, long ts, Map<String,String> customTags, Number number, EventType type) {
         EventImpl e;
         Map<String,String> ctags = new HashMap<String,String>();
 
@@ -198,22 +243,22 @@ public class MetricRegistry {
         }
 
         if (number instanceof Double) {
-            e = new DoubleEvent(prefix + name, ctags, ts, number.doubleValue());
+            e = new DoubleEvent(prefix + name, ctags, type, ts, number.doubleValue());
         }
         else {
-            e = new LongEvent(prefix + name, ctags, ts, number.longValue());
+            e = new LongEvent(prefix + name, ctags, type, ts, number.longValue());
         }
         dispatchEvent(e);
     }
 
-    void postEvent(String name, long ts, long value) {
-        EventImpl e = new LongEvent(prefix + name, tags, ts, value);
+    void postEvent(String name, long ts, long value, EventType type) {
+        EventImpl e = new LongEvent(prefix + name, tags, type, ts, value);
         dispatchEvent(e);
 
     }
 
-    void postEvent(String name, long ts, double value) {
-        EventImpl e = new DoubleEvent(prefix + name, tags, ts, value);
+    void postEvent(String name, long ts, double value, EventType type) {
+        EventImpl e = new DoubleEvent(prefix + name, tags, type, ts, value);
         dispatchEvent(e);
     }
 

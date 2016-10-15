@@ -13,7 +13,21 @@ import org.dsh.metrics.EventListener;
 import org.dsh.metrics.LongEvent;
 import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.builder.MetricBuilder;
+import org.kairosdb.client.response.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Will be moved library metric-raw-kairosdb in the future.
+ * Notes: while all constructors take username/password, these are currently not used.
+ *
+ * Upload strategy:
+ * All events will be uploaded in batch: batchSize (default: 100), or every 1 second, whichever comes first.
+ * A status update will be logged at level info, once every 5 minutes, indicating the number of the number http calls (dispatchCount), as well
+ * the number of metric datapoints, the number or errors (with details on the last error that occured).
+ *
+ *
+ * */
 public class KairosDBListener implements EventListener, Runnable {
 
     private final BlockingQueue<Event> queue;
@@ -21,7 +35,7 @@ public class KairosDBListener implements EventListener, Runnable {
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
     private Thread runThread;
     private final HttpClient kairosDb;
-
+    private final static Logger log = LoggerFactory.getLogger(KairosDBListener.class);
 
     public KairosDBListener(String connectString,
                             String un,
@@ -41,7 +55,7 @@ public class KairosDBListener implements EventListener, Runnable {
                             String pd,
                             int batchSize,
                             long offerTimeMillis) {
-        this.queue = new ArrayBlockingQueue<>(1000);
+        this.queue = new ArrayBlockingQueue<>(5000);
         if (batchSize > 1) {
             this.batchSize = batchSize;
         }
@@ -64,18 +78,65 @@ public class KairosDBListener implements EventListener, Runnable {
 
     @Override
     public void run() {
-        final List<Event> dispatchList = new ArrayList<>(100);
+        final List<Event> dispatchList = new ArrayList<>(batchSize);
+        long lastResetTime = 0;
+        long httpCalls = 0;
+        long metricCount = 0;
+        long errorCount = 0;
+        long exceptionTime = 0;
+        Response lastError = null;
         do {
+
             try {
+                // block until we have at least 1 metric
                 dispatchList.add(queue.take());
-                queue.drainTo(dispatchList, batchSize - 1);
-                kairosDb.pushMetrics(buildPayload(dispatchList));
+
+                // try to always send a minimum of x datapoints per call.
+                long takeTime = System.currentTimeMillis();
+                do {
+                    Event e = queue.poll(10, TimeUnit.MILLISECONDS);
+                    if (e != null) {
+                        dispatchList.add(e);
+                    }
+                    // flush every second or until we have seen batchSize Events
+                } while(dispatchList.size() < batchSize || (System.currentTimeMillis() - takeTime < 1000));
+
+                metricCount += dispatchList.size();
+                Response r = kairosDb.pushMetrics(buildPayload(dispatchList));
+                httpCalls++;
+                if (r.getStatusCode() != 204 ){
+                    lastError = r;
+                    errorCount++;
+                }
+                // every 5 minutes log a stat
+                if (System.currentTimeMillis() - lastResetTime > 300_000) {
+                    if (lastError != null) {
+                        StringBuilder sb = new StringBuilder();
+                        for (String s : lastError.getErrors()) {
+                            sb.append("[");
+                            sb.append(s);
+                            sb.append("]");
+                        }
+                        log.info("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
+                        lastError = null;
+                    }
+                    else {
+                        log.info("Http calls: Dispatch count: ", httpCalls, metricCount);
+                    }
+                    httpCalls = 0;
+                    errorCount = 0;
+                    metricCount = 0;
+                    lastResetTime = System.currentTimeMillis();
+                }
             }
             catch(InterruptedException ie) {
                 break;
             }
             catch(Exception ex) {
-                // swallow
+                if (System.currentTimeMillis() - exceptionTime > 60_000) {
+                    log.error("Unexpected Exception (only 1 exception log per minute)", ex);
+                }
+                exceptionTime = System.currentTimeMillis();
             }
             finally {
                 dispatchList.clear();

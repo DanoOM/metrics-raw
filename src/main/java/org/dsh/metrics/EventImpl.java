@@ -8,11 +8,13 @@ public abstract class EventImpl implements Event {
     private final String name;                // event name
     protected Map<String,String> tags;        // tags associated to event
     protected final long time;                // time of event
+    protected final EventType eventType;
 
-    EventImpl(final String name, final Map<String,String> tags, final long time) {
+    EventImpl(final String name, final Map<String,String> tags, final EventType type, final long time) {
         this.name = name;
         this.tags = tags;
         this.time = time;
+        this.eventType = type;
     }
 
     @Override
@@ -23,6 +25,11 @@ public abstract class EventImpl implements Event {
     @Override
     public long getTimestamp() {
         return this.time;
+    }
+
+    @Override
+    public EventType getType(){
+        return eventType;
     }
 
     @Override
@@ -48,9 +55,9 @@ public abstract class EventImpl implements Event {
         private MetricRegistry registry;
         EventImpl event;
 
-        public Builder(String name, MetricRegistry registry) {
+        public Builder(String name, MetricRegistry registry, EventType eventType) {
             this.registry = registry;
-            this.event = new LongEvent(registry.getPrefix() + name, new HashMap<String,String>(), System.currentTimeMillis(),1l);
+            this.event = new LongEvent(registry.getPrefix() + name, new HashMap<String,String>(), eventType, System.currentTimeMillis(),1l);
         }
 
         public Builder addTag(String tag, String value) {

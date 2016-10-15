@@ -23,7 +23,7 @@ public class Timer extends MetricBase {
     /** calculates the time from the starttime, also triggers an event for Listeners */
     public long stop() {
     	long duration = System.currentTimeMillis() - startTime;
-    	registry.postEvent(name, startTime, tags, duration);
+    	registry.postEvent(name, startTime, tags, duration, EventType.Timer);
     	return duration;
     }
 
@@ -39,7 +39,7 @@ public class Timer extends MetricBase {
     	    this.tags = new HashMap<>();
     	}
     	this.tags.putAll(tags);
-    	registry.postEvent(name, startTime, tags, duration);
+    	registry.postEvent(name, startTime, tags, duration, EventType.Timer);
     	return duration;
     }
 
