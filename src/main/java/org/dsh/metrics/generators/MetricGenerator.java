@@ -61,8 +61,8 @@ public class MetricGenerator {
                 MetricRegistry mr = new MetricRegistry.Builder(service,app)
                         .withHost(hostname)
                         .build();
-                DropWizardListener listener = new DropWizardListener("wdc-tst-metrics-001.openmarket.com", 2003, 20);
-                mr.addEventListener(listener);
+                //DropWizardListener listener = new DropWizardListener("wdc-tst-metrics-001.openmarket.com", 2003, 20);
+                //mr.addEventListener(listener);
 
                 if (writeTps > 0) {
                     writers[i] = new EventGenerator(hostname,
