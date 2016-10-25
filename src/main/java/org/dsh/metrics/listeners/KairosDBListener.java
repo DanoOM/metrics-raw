@@ -91,7 +91,7 @@ public class KairosDBListener implements EventListener, Runnable {
                 // block until we have at least 1 metric
                 dispatchList.add(queue.take());
 
-                // try to always send a minimum of x datapoints per call.
+                // try to always send a minimum of dispatchSize datapoints per call.
                 long takeTime = System.currentTimeMillis();
                 do {
                     Event e = queue.poll(10, TimeUnit.MILLISECONDS);
@@ -99,7 +99,7 @@ public class KairosDBListener implements EventListener, Runnable {
                         dispatchList.add(e);
                     }
                     // flush every second or until we have seen batchSize Events
-                } while(dispatchList.size() < batchSize || (System.currentTimeMillis() - takeTime < 1000));
+                } while(dispatchList.size() < batchSize && (System.currentTimeMillis() - takeTime < 1000));
 
                 metricCount += dispatchList.size();
                 Response r = kairosDb.pushMetrics(buildPayload(dispatchList));
