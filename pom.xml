@@ -6,7 +6,7 @@
 	</prerequisites>
 	<groupId>org.dsh</groupId>
 	<artifactId>metrics-raw</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.4-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Metrics-Raw</name>
 	<description>
@@ -42,7 +42,7 @@
 		<url>https://github.com/DanoOM/metrics-raw</url>
 		<connection>scm:git:git://github.com/DamoOM/metrics-raw.git</connection>
 		<developerConnection>scm:git:git@github.com:DanoOM/metrics-raw.git</developerConnection>
-		<tag>metrics-raw-0.0.3</tag>
+		<tag>HEAD</tag>
 	</scm>
 
 	<distributionManagement>
