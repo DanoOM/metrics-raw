@@ -13,7 +13,7 @@ import org.dsh.metrics.EventListener;
 /**
  * Echoes out metrics to the console in the Event Format, currently:
  *
- * <Timestamp> <EventName> <Tags> <value>
+ * [Timestamp] [EventName] [Tags] [value]
  *
  * NOTE: tags/value are optional
  * */

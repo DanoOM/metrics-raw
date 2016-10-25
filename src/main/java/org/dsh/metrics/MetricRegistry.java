@@ -21,15 +21,15 @@ public class MetricRegistry {
         private Map<String,String> tags = new HashMap<String,String>();
         private final String prefix;
 
-        /** @param applicationDomain - application Domain (service team)
+        /** @param serviceTeam - application Domain (service team)
          *  @param application  - application name
-         *  A prefix for each metric will be generated, <applicationDomain>.<application>.
+         *  A prefix for each metric will be generated, serviceTeam.Aapplication.
          *
          *  */
-        public Builder(String applicationDomain, String application) {
-        	if (applicationDomain == null || application == null)
-        		throw new IllegalArgumentException("applicationDomain and/or application cannot be null");
-        	prefix = applicationDomain + "." + application + ".";
+        public Builder(String serviceTeam, String application) {
+        	if (serviceTeam == null || application == null)
+        		throw new IllegalArgumentException("serviceTeam and/or application cannot be null");
+        	prefix = serviceTeam + "." + application + ".";
         }
 
         public Builder withHost(String host) {

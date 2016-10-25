@@ -9,6 +9,7 @@ public interface EventListener {
      * this listener has received, but has not processed.
      *
      * Can be used for shutdown, and testing.
+     * @return The number of events currently buffered.
      * */
     public int eventsBuffered();
 }
