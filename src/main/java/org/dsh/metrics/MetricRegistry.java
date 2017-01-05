@@ -18,7 +18,7 @@ public class MetricRegistry {
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10);
 
     public static class Builder {
-        private Map<String,String> tags = new HashMap<String,String>();
+        private Map<String,String> tags = new HashMap<>();
         private final String prefix;
 
         /** @param serviceTeam - application Domain (service team)
@@ -118,7 +118,7 @@ public class MetricRegistry {
                 c = getCounters().get(key);
                 if (c == null) {
                     Counter tmp = new Counter(name, this, tags);
-                    getCounters().put(new MetricKey(name),tmp);
+                    getCounters().put(new MetricKey(name, tags),tmp);
                     return tmp;
                 }
             }
@@ -162,7 +162,7 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value, Map<String,String> customTags) {
-        Map<String,String> ctags = new HashMap<String,String>();
+        Map<String,String> ctags = new HashMap<>();
 
         if (tags != null) {
             ctags.putAll(tags);
@@ -174,7 +174,7 @@ public class MetricRegistry {
     }
 
     public void event(String name, double value, Map<String,String> customTags) {
-        Map<String,String> ctags = new HashMap<String,String>();
+        Map<String,String> ctags = new HashMap<>();
 
         if (tags != null) {
             ctags.putAll(tags);
@@ -233,7 +233,7 @@ public class MetricRegistry {
 
     void postEvent(String name, long ts, Map<String,String> customTags, Number number, EventType type) {
         EventImpl e;
-        Map<String,String> ctags = new HashMap<String,String>();
+        Map<String,String> ctags = new HashMap<>();
 
         if (tags != null) {
             ctags.putAll(tags);
