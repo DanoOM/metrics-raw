@@ -1,4 +1,4 @@
-package org.dsh.metrics.listeners;
+package org.dshops.metrics.listeners;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -7,10 +7,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.dsh.metrics.DoubleEvent;
-import org.dsh.metrics.Event;
-import org.dsh.metrics.EventListener;
-import org.dsh.metrics.LongEvent;
+import org.dshops.DoubleEvent;
+import org.dshops.Event;
+import org.dshops.EventListener;
+import org.dshops.LongEvent;
 import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.builder.MetricBuilder;
 import org.kairosdb.client.response.Response;

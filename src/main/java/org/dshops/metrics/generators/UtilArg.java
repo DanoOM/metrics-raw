@@ -1,4 +1,4 @@
-package org.dsh.metrics.generators;
+package org.dshops.metrics.generators;
 
 public class UtilArg {
     static public int getIntArg(String[] args, String arg, int defaultValue) {

@@ -1,13 +1,13 @@
-package org.dsh.metrics.generators;
+package org.dshops.metrics.generators;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.dsh.metrics.EventImpl;
-import org.dsh.metrics.EventListener;
-import org.dsh.metrics.MetricRegistry;
-import org.dsh.metrics.listeners.DropWizardListener;
+import org.dshops.EventImpl;
+import org.dshops.EventListener;
+import org.dshops.MetricRegistry;
+import org.dshops.metrics.listeners.DropWizardListener;
 
 class EventGenerator extends Thread implements Runnable {
     final String hostname;

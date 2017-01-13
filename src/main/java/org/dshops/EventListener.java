@@ -1,4 +1,4 @@
-package org.dsh.metrics;
+package org.dshops;
 
 public interface EventListener {
     // All eventListeners are notified on same (per Registry)

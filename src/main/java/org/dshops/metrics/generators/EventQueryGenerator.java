@@ -1,4 +1,4 @@
-package org.dsh.metrics.generators;
+package org.dshops.metrics.generators;
 
 import java.util.List;
 import java.util.Map;

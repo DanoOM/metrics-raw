@@ -1,13 +1,13 @@
-package org.dsh.metrics.listeners;
+package org.dshops.metrics.listeners;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.dsh.metrics.Event;
-import org.dsh.metrics.EventListener;
-import org.dsh.metrics.LongEvent;
+import org.dshops.Event;
+import org.dshops.EventListener;
+import org.dshops.LongEvent;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;

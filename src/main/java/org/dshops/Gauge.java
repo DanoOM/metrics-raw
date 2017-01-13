@@ -1,4 +1,4 @@
-package org.dsh.metrics;
+package org.dshops;
 
 @FunctionalInterface
 public interface Gauge<T> {

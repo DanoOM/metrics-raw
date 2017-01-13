@@ -6,7 +6,7 @@
 	<prerequisites>
 		<maven>3.0.0</maven>
 	</prerequisites>
-	<groupId>org.dsh</groupId>
+	<groupId>org.dshops</groupId>
 	<artifactId>metrics-raw</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>

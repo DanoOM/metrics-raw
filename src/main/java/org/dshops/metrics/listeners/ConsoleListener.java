@@ -1,4 +1,4 @@
-package org.dsh.metrics.listeners;
+package org.dshops.metrics.listeners;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -7,8 +7,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.dsh.metrics.Event;
-import org.dsh.metrics.EventListener;
+import org.dshops.Event;
+import org.dshops.EventListener;
 
 /**
  * Echoes out metrics to the console in the Event Format, currently:

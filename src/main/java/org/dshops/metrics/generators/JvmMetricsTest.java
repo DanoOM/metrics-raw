@@ -1,9 +1,9 @@
-package org.dsh.metrics.generators;
+package org.dshops.metrics.generators;
 
-import org.dsh.metrics.JvmMetrics;
-import org.dsh.metrics.MetricRegistry;
-import org.dsh.metrics.listeners.ConsoleListener;
-import org.dsh.metrics.listeners.KairosDBListener;
+import org.dshops.JvmMetrics;
+import org.dshops.MetricRegistry;
+import org.dshops.metrics.listeners.ConsoleListener;
+import org.dshops.metrics.listeners.KairosDBListener;
 
 
 public class JvmMetricsTest {
