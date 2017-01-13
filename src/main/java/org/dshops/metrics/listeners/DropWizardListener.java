@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.dshops.Event;
-import org.dshops.EventListener;
-import org.dshops.LongEvent;
+import org.dshops.metrics.Event;
+import org.dshops.metrics.EventListener;
+import org.dshops.metrics.LongEvent;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;

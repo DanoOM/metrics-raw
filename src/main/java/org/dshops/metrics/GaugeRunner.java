@@ -1,4 +1,4 @@
-package org.dshops;
+package org.dshops.metrics;
 
 class GaugeRunner<T extends Number> implements Runnable {
     private final Gauge<T> gauge;

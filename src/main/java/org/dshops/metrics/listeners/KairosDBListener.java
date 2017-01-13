@@ -7,10 +7,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.dshops.DoubleEvent;
-import org.dshops.Event;
-import org.dshops.EventListener;
-import org.dshops.LongEvent;
+import org.dshops.metrics.DoubleEvent;
+import org.dshops.metrics.Event;
+import org.dshops.metrics.EventListener;
+import org.dshops.metrics.LongEvent;
 import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.builder.MetricBuilder;
 import org.kairosdb.client.response.Response;

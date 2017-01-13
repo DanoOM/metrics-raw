@@ -7,8 +7,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.dshops.Event;
-import org.dshops.EventListener;
+import org.dshops.metrics.Event;
+import org.dshops.metrics.EventListener;
 
 /**
  * Echoes out metrics to the console in the Event Format, currently:

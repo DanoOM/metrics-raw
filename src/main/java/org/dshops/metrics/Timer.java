@@ -1,4 +1,4 @@
-package org.dshops;
+package org.dshops.metrics;
 
 import java.util.HashMap;
 import java.util.Map;

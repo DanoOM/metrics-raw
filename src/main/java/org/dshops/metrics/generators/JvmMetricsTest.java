@@ -1,7 +1,7 @@
 package org.dshops.metrics.generators;
 
-import org.dshops.JvmMetrics;
-import org.dshops.MetricRegistry;
+import org.dshops.metrics.JvmMetrics;
+import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.listeners.ConsoleListener;
 import org.dshops.metrics.listeners.KairosDBListener;
 

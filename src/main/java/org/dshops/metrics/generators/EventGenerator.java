@@ -4,9 +4,9 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.dshops.EventImpl;
-import org.dshops.EventListener;
-import org.dshops.MetricRegistry;
+import org.dshops.metrics.EventImpl;
+import org.dshops.metrics.EventListener;
+import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.listeners.DropWizardListener;
 
 class EventGenerator extends Thread implements Runnable {

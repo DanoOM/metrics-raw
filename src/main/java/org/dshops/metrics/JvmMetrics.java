@@ -1,4 +1,4 @@
-package org.dshops;
+package org.dshops.metrics;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;

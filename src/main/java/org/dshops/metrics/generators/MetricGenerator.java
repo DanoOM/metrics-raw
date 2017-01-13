@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.dshops.MetricRegistry;
+import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.listeners.DropWizardListener;
 import org.dshops.metrics.listeners.KairosDBListener;
 import org.kairosdb.client.HttpClient;
