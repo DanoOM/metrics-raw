@@ -25,6 +25,7 @@
 
 	<developers>
 		<developer>
+		    <name>Daniel Hopkins</name>
 			<id>DanoOM</id>
 			<url>https://github.com/DanoOM</url>
 		</developer>
@@ -49,11 +50,11 @@
 
 	<distributionManagement>
 		<snapshotRepository>
-			<id>ossrh</id>
+			<id>metrics-raw-repo</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
 		<repository>
-			<id>ossrh</id>
+			<id>metrics-raw-repo</id>
 			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 		</repository>
 	</distributionManagement>
