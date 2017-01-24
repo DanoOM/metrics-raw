@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.dshops.metrics.MetricRegistry;
-import org.dshops.metrics.listeners.DropWizardListener;
 import org.dshops.metrics.listeners.KairosDBListener;
 import org.kairosdb.client.HttpClient;
 
@@ -138,5 +137,7 @@ public class MetricGenerator {
             e.printStackTrace();
         }
     }
+
+
 }
 

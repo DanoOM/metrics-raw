@@ -30,7 +30,7 @@ public class TimerBucket extends Timer {
         return stop(Util.buildTags(tags));
     }
 
-    /** @todo This should error out, or 'not' update the duration on an already stopped timer. */
+    /** todo This should error out, or 'not' update the duration on an already stopped timer. */
     @Override
     public long stop(Map<String,String> customTags) {
         long endTime = System.currentTimeMillis();

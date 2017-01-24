@@ -9,7 +9,7 @@ public interface Event {
     public EventType getType();
 
     default public long getLongValue(){ return 1; }
-        default public double getDoubleValue(){ return 0;}
+    default public double getDoubleValue(){ return 0;}
 
 
 }
