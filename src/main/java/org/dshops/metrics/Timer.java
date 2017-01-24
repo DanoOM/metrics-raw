@@ -33,7 +33,7 @@ public class Timer extends MetricBase {
     	return stop(Util.buildTags(tags));
     }
 
-    /** Add a tag to a running timer (@todo should error out if timer already stopped) */
+    /** Add a tag to a running timer (todo should error out if timer already stopped) */
     public Timer addTag(String name, String value) {
         if (this.tags == null){
             this.tags = new HashMap<>();
@@ -42,7 +42,7 @@ public class Timer extends MetricBase {
         return this;
     }
 
-    /** @todo This should error out, or 'not' update the duration on an already stopped timer. */
+    /** todo This should error out, or 'not' update the duration on an already stopped timer. */
     public long stop(Map<String,String> customTags) {
     	long duration = System.currentTimeMillis() - startTime;
     	if (this.tags == null){
