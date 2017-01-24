@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Timer extends MetricBase {
-	private long startTime;
+	protected long startTime;
 
     Timer(String name, MetricRegistry registry) {
         super(name, registry, null);
@@ -33,13 +33,23 @@ public class Timer extends MetricBase {
     	return stop(Util.buildTags(tags));
     }
 
-    public long stop(Map<String,String> tags){
+    /** Add a tag to a running timer (@todo should error out if timer already stopped) */
+    public Timer addTag(String name, String value) {
+        if (this.tags == null){
+            this.tags = new HashMap<>();
+        }
+        this.tags.put(name,value);
+        return this;
+    }
+
+    /** @todo This should error out, or 'not' update the duration on an already stopped timer. */
+    public long stop(Map<String,String> customTags) {
     	long duration = System.currentTimeMillis() - startTime;
     	if (this.tags == null){
     	    this.tags = new HashMap<>();
     	}
-    	this.tags.putAll(tags);
-    	registry.postEvent(name, startTime, tags, duration, EventType.Timer);
+    	this.tags.putAll(customTags);
+    	registry.postEvent(name, startTime, this.tags, duration, EventType.Timer);
     	return duration;
     }
 

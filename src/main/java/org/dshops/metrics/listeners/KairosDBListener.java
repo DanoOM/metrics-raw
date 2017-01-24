@@ -117,7 +117,12 @@ public class KairosDBListener implements EventListener, Runnable {
                             sb.append(s);
                             sb.append("]");
                         }
-                        log.info("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
+                        if (lastError != null) {
+                            log.error("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
+                        }
+                        else {
+                            log.info("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
+                        }
                         lastError = null;
                     }
                     else {

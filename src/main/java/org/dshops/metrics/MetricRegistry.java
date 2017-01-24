@@ -1,10 +1,13 @@
 package org.dshops.metrics;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -16,6 +19,8 @@ public class MetricRegistry {
     private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10);
+    // registries stored by prefix
+    private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
@@ -58,15 +63,23 @@ public class MetricRegistry {
     MetricRegistry(String prefix, Map<String,String> tags) {
     	this.prefix = prefix;
         this.tags = tags;
+        registries.put(prefix, this);
     }
 
     MetricRegistry(String prefix) {
     	this.prefix = prefix;
         this.tags = null;
+        registries.put(prefix, this);
     }
 
     public String getPrefix() {
     	return prefix;
+    }
+
+    /** Returns a previously created registry, where prefix = <serviceTeam>.<application>.
+     * (note: '.' on end)*/
+    public static MetricRegistry getRegistry(String prefix) {
+        return registries.get(prefix);
     }
 
     public Map<String,String> getTags() {
@@ -87,6 +100,11 @@ public class MetricRegistry {
 
     public Timer timer(String name, Map<String,String> tags) {
     	return new Timer(name, this, tags).start();
+    }
+
+    // construct a timer, but aggregate time values into buckets of size bucketTimeSeconds
+    public Timer timer(String name, int bucketTimeSeconds, String...tags) {
+        return timer(name, Util.buildTags(tags));
     }
 
     /** Counters not recommended for real use, but may be
@@ -229,6 +247,32 @@ public class MetricRegistry {
 
     public List<EventListener> getListeners() {
         return Collections.unmodifiableList(listeners);
+    }
+
+    Map<MetricKey, ConcurrentSkipListMap<Long, Collection<Number>>> data = new ConcurrentSkipListMap<>(); // ts/value
+
+    void addToBucket(String name, Map<String,String> customTags, long ts, Number number, EventType type) {
+        MetricKey key = new MetricKey(name, customTags);
+        ConcurrentSkipListMap<Long, Collection<Number>> buckets = data.get(key);
+        if (buckets == null) {
+            synchronized (data) {
+                buckets = data.get(key);
+                if (buckets == null) {
+                    buckets = new ConcurrentSkipListMap<>();
+                    data.put(key, buckets);
+                }
+            }
+        }
+        addMetric(ts, number, buckets);
+    }
+
+    private void addMetric(long endTime, Number duration, ConcurrentSkipListMap<Long,Collection<Number>> buckets) {
+        Collection<Number> values = buckets.get(endTime);
+        if (values == null) {
+            values = new ConcurrentLinkedQueue<>();
+            buckets.put(endTime, values);
+        }
+        values.add(duration);
     }
 
     void postEvent(String name, long ts, Map<String,String> customTags, Number number, EventType type) {
