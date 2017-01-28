@@ -95,7 +95,7 @@ public class KairosDBListener implements EventListener, Runnable {
     @Override
     public void run() {
         final List<Event> dispatchList = new ArrayList<>(batchSize);
-        long lastResetTime = 0;
+        long lastResetTime = System.currentTimeMillis();
         long httpCalls = 0;
         long metricCount = 0;
         long errorCount = 0;
@@ -139,9 +139,6 @@ public class KairosDBListener implements EventListener, Runnable {
                         }
                         lastError = null;
                     }
-                    else {
-                        log.info("Http calls: Dispatch count: ", httpCalls, metricCount);
-                    }
                     droppedEvents.set(0);
                     httpCalls = 0;
                     errorCount = 0;
@@ -167,31 +164,35 @@ public class KairosDBListener implements EventListener, Runnable {
     private void sendMetricStats(long metricCount, long errorCount, long httpCalls) throws Exception {
     	try{
 	    	MetricBuilder mb = MetricBuilder.getInstance();
-	    	mb.addMetric("metrics.count")
+	    	mb.addMetric("stats.count")
 	    	  .addTags(registry.getTags())
 	    	  .addTag("serviceTeam",serviceTeam)
-	    	  .addTag("app",serviceTeam)
-	    	  .addTag("appType",serviceTeam)
+	    	  .addTag("app",app)
+	    	  .addTag("appType",appType)
 	    	  .addDataPoint(metricCount);
-	    	mb.addMetric("metrics.errors")
-	    	  .addTags(registry.getTags()).
-	    	   addTag("serviceTeam",serviceTeam)
-	    	  .addTag("app",serviceTeam)
-	    	  .addTag("appType",serviceTeam)
+	    	mb.addMetric("stats.errors")
+	    	.addTags(registry.getTags())
+            .addTag("serviceTeam",serviceTeam)
+            .addTag("app",app)
+            .addTag("appType",appType)
 	    	  .addDataPoint(errorCount);
-	    	mb.addMetric("metrics.httpCalls")
-	    	  .addTags(registry.getTags())
-	    	  .addTag("serviceTeam",serviceTeam)
-	    	  .addTag("app",serviceTeam)
-	    	  .addTag("appType",serviceTeam)
+	    	mb.addMetric("stats.httpCalls")
+	    	.addTags(registry.getTags())
+            .addTag("serviceTeam",serviceTeam)
+            .addTag("app",app)
+            .addTag("appType",appType)
 	    	  .addDataPoint(httpCalls);
-	    	mb.addMetric("metrics.dropped")
-	    	  .addTags(registry.getTags())
-	    	  .addTag("serviceTeam",serviceTeam)
-	    	  .addTag("app",serviceTeam)
-	    	  .addTag("appType",serviceTeam)
+	    	mb.addMetric("stats.dropped")
+	    	.addTags(registry.getTags())
+            .addTag("serviceTeam",serviceTeam)
+            .addTag("app",app)
+            .addTag("appType",appType)
 	    	  .addDataPoint(droppedEvents.longValue());
-	    	kairosDb.pushMetrics(mb);
+	    	 Response r = kairosDb.pushMetrics(mb);
+
+             if (r.getStatusCode() != 204 ) {
+                 log.warn("failed to send metric statistics!", r.getStatusCode());
+             }
     	}
     	catch(Exception e) {
     		log.warn("failed to send metric statistis to server! {} ", e.getMessage());

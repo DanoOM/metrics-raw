@@ -13,7 +13,13 @@ public class Test {
         mr.event("testEvent", 22);
         mr.counter("testCounter").increment();
         mr.counter("testCounter").increment();
-        mr.timer("", "","").addTag("", "").stop("");
+        for (int i = 0; i < 300000; i++){
+            try{Thread.sleep(5);}
+            catch(Exception e){};
+            mr.counter("testCounter").increment();
+        }
+        System.out.println("");
+        //mr.timer("", "","").addTag("", "").stop("");
     }
 
 }
