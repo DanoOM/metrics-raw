@@ -56,7 +56,7 @@ public class KairosDBListener implements EventListener, Runnable {
                             String pd,
                             MetricRegistry registry,
                             int batchSize) {
-        this(connectString, un, pd, registry, batchSize, -1);
+        this(connectString, un, pd, registry, batchSize, 5000, -1);
     }
 
     public KairosDBListener(String connectString,
@@ -64,6 +64,7 @@ public class KairosDBListener implements EventListener, Runnable {
                             String pd,
                             MetricRegistry registry,
                             int batchSize,
+                            int bufferSize,
                             long offerTimeMillis) {
     	this.registry = registry;
     	String[] prefix = registry.getPrefix().split("\\.");
@@ -71,7 +72,7 @@ public class KairosDBListener implements EventListener, Runnable {
     	this.app = prefix[1];
     	this.appType = prefix[2];
 
-        this.queue = new ArrayBlockingQueue<>(5000);
+        this.queue = new ArrayBlockingQueue<>(bufferSize);
         if (batchSize > 1) {
             this.batchSize = batchSize;
         }

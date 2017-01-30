@@ -5,9 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.dshops.metrics.EventImpl;
-import org.dshops.metrics.EventListener;
 import org.dshops.metrics.MetricRegistry;
-import org.dshops.metrics.listeners.DropWizardListener;
 
 class EventGenerator extends Thread implements Runnable {
     final String hostname;
@@ -32,18 +30,9 @@ class EventGenerator extends Thread implements Runnable {
         this.exitFlag = exitFlag;
         this.counter = counter;
         this.mr = mr;
-        eventNames = new String[eventSignatures];
-        DropWizardListener dl = null;
-        for (EventListener el:mr.getListeners()) {
-            if (el instanceof DropWizardListener) {
-                dl = (DropWizardListener)el;
-            }
-        }
+        eventNames = new String[eventSignatures];        
         for (int i = 0; i < eventSignatures; i++) {
-            eventNames[i] = "event"+i;
-            if (dl != null) {
-                dl.addMap(mr.getPrefix() + eventNames[i], mr.getPrefix() + eventNames[i] + ".{host}");
-            }
+            eventNames[i] = "event"+i;        
         }
         this.tagValueCount = tagValueCount;
         this.possibleTags = tagCount;
