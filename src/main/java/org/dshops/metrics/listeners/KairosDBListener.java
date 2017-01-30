@@ -151,6 +151,7 @@ public class KairosDBListener implements EventListener, Runnable {
                 break;
             }
             catch(Exception ex) {
+                errorCount++;
                 if (System.currentTimeMillis() - exceptionTime > 60_000) {
                     log.error("Unexpected Exception (only 1 exception logged per minute)", ex);
                 }
@@ -165,25 +166,25 @@ public class KairosDBListener implements EventListener, Runnable {
     private void sendMetricStats(long metricCount, long errorCount, long httpCalls) throws Exception {
     	try{
 	    	MetricBuilder mb = MetricBuilder.getInstance();
-	    	mb.addMetric("stats.count")
+	    	mb.addMetric("metricsraw.stats.data.count")
 	    	  .addTags(registry.getTags())
 	    	  .addTag("serviceTeam",serviceTeam)
 	    	  .addTag("app",app)
 	    	  .addTag("appType",appType)
 	    	  .addDataPoint(metricCount);
-	    	mb.addMetric("stats.errors")
+	    	mb.addMetric("metricsraw.stats.http.errors")
 	    	.addTags(registry.getTags())
             .addTag("serviceTeam",serviceTeam)
             .addTag("app",app)
             .addTag("appType",appType)
 	    	  .addDataPoint(errorCount);
-	    	mb.addMetric("stats.httpCalls")
+	    	mb.addMetric("metricsraw.stats.http.count")
 	    	.addTags(registry.getTags())
             .addTag("serviceTeam",serviceTeam)
             .addTag("app",app)
             .addTag("appType",appType)
 	    	  .addDataPoint(httpCalls);
-	    	mb.addMetric("stats.dropped")
+	    	mb.addMetric("metricsraw.stats.data.dropped")
 	    	.addTags(registry.getTags())
             .addTag("serviceTeam",serviceTeam)
             .addTag("app",app)
