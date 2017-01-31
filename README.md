@@ -73,10 +73,10 @@ Where:
 * offerTimeMillis: the amount of time to wait before dropping a metric data point if the buffer is full.  (should be zero in prod, this is primarly used for testing).
 
 The kairosdb listener will upload 4 statistics to kairos at 1 minute intervals
-1. stats.count - Count of data points uploaded to the server.
-2. stats.dropped - The number of datapoints dropped due buffer being full.
-3. stats.errors - The number of errors encountered when attempted to upload metrics.
-4. stats.httpCalls - The actual number of http requests to upload metrics.
+1. metricsraw.stats.data.count - Count of data points uploaded to the server.
+2. metricsraw.stats.data.dropped - The number of datapoints dropped due buffer being full.
+3. metricsraw.stats.http.errors - The number of errors encountered when attempted to upload metrics.
+4. metrisraw.stats.http.count - The actual number of http requests to upload metrics.
 The 4 metrics will be tagged, with the following tags:
 host
 serviceTeam
