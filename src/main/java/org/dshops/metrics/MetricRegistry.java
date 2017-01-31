@@ -79,8 +79,9 @@ public class MetricRegistry {
     	return prefix;
     }
 
-    /** Returns a previously created registry, where prefix = <serviceTeam>.<application>.
-     * (note: '.' on end)*/
+    /** Returns a previously created registry, where prefix = serviceTeam.application.appType
+     * (note: '.' on end)
+     * */
     public static MetricRegistry getRegistry(String prefix) {
         return registries.get(prefix);
     }
