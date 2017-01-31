@@ -56,6 +56,34 @@ At this point we only have 2 Listeners implemented
 1. ConsoleListener - Simply logs the event to the console.
 2. KairosListener - sends events to a KairosDB.
 
+## KairosDBListener
+Users should not need to interact with the KairosDBListener, except during it construction, the following 3 constructors are provided.
+
+1. KairosDBListener(String conectString, String un, String pd, MetricRegistry registry)
+2. KairosDBListener(String conectString, String un, String pd, MetricRegistry registry, batchSize)
+3. KairosDBListener(String conectString, String un, String pd, MetricRegistry registry, int batchSize, int bufferSize, long offerTimeMillis)
+
+Where: 
+* connectString: http://kairoshost:port
+* un: username (not used atm).
+* pd: password (not used atm).
+* registry: (the parent metric registry, used to determine tags for metric statics: (stats.xyz).
+* batchSize: batch size to use when uploading statistics.
+* bufferSize: internal buffer used to store metrics. (default: 5000)
+* offerTimeMillis: the amount of time to wait before dropping a metric data point if the buffer is full.  (should be zero in prod, this is primarly used for testing).
+
+The kairosdb listener will upload 4 statistics to kairos at 1 minute intervals
+1. metricsraw.stats.data.count - Count of data points uploaded to the server.
+2. metricsraw.stats.data.dropped - The number of datapoints dropped due buffer being full.
+3. metricsraw.stats.http.errors - The number of errors encountered when attempted to upload metrics.
+4. metrisraw.stats.http.count - The actual number of http requests to upload metrics.
+The 4 metrics will be tagged, with the following tags:
+host
+serviceTeam
+application
+appType
+
+
 * NOTE: KairosDB currently only stores ms precision, and can only store 1 event per ms of the same Event with the same NAME/TAG-SET.  
 
 ## Options are being considered: 

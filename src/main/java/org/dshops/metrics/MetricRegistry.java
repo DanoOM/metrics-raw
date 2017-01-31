@@ -31,10 +31,13 @@ public class MetricRegistry {
          *  A prefix for each metric will be generated, serviceTeam.Aapplication.
          *
          *  */
-        public Builder(String serviceTeam, String application) {
-        	if (serviceTeam == null || application == null)
-        		throw new IllegalArgumentException("serviceTeam and/or application cannot be null");
-        	prefix = serviceTeam + "." + application + ".";
+        public Builder(String serviceTeam, String application, String applicationType) {
+        	if (serviceTeam == null || application == null || applicationType == null)
+        		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot be null");
+        	if (serviceTeam.contains(".") || application.contains(".") || applicationType.contains(".")){
+        		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot contain the character '.'");
+        	}
+        	prefix = serviceTeam + "." + application + "." + applicationType + ".";
         }
 
         public Builder withHost(String host) {

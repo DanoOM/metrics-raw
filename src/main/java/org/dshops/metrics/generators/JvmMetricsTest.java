@@ -17,6 +17,7 @@ public class JvmMetricsTest {
         reg.addEventListener(new KairosDBListener("http://wdc-tst-masapp-002:8080",
                                                   "root",
                                                   "root",
+                                                  reg,
                                                   100));
 
         reg.addEventListener(new ConsoleListener(System.out));
@@ -41,7 +42,7 @@ public class JvmMetricsTest {
 
 
     public MetricRegistry getRegistry() {
-        return new MetricRegistry.Builder("dsh-metrics","test")
+        return new MetricRegistry.Builder("dshops","metrics", "test")
                                  .withDatacenter("dataCenter1")
                                  .withHost("host-1.xyz.org")
                                  .build();

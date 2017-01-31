@@ -8,7 +8,7 @@
 	</prerequisites>
 	<groupId>org.dshops</groupId>
 	<artifactId>metrics-raw</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.4</version>
 	<packaging>jar</packaging>
 	<name>Metrics-Raw</name>
 	<description>
@@ -60,26 +60,6 @@
 	</distributionManagement>
 
 	<dependencies>
-
-		<dependency>
-			<groupId>io.dropwizard.metrics</groupId>
-			<artifactId>metrics-core</artifactId>
-			<version>3.1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>io.dropwizard.metrics</groupId>
-			<artifactId>metrics-graphite</artifactId>
-			<version>3.1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>io.dropwizard.metrics</groupId>
-			<artifactId>metrics-logback</artifactId>
-			<version>3.1.2</version>
-			<scope>provided</scope>
-		</dependency>
-
-
-
 		<dependency>
 			<groupId>org.kairosdb</groupId>
 			<artifactId>client</artifactId>

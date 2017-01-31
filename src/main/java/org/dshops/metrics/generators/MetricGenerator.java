@@ -23,8 +23,9 @@ public class MetricGenerator {
             String user = getArg(args, "u", "root");
             String pd = getArg(args, "p", "root");
 
-            String service = getArg(args, "s", "dsh-metrics");
-            String app = getArg(args, "a", "load-generator");
+            String service = getArg(args, "s", "dshops");
+            String app = getArg(args, "a", "metrics");
+            String appType = getArg(args, "T", "test");
 
             // simulations
             final long runTime = getIntArg(args, "t", Integer.MAX_VALUE); // runtime minutes
@@ -47,6 +48,7 @@ public class MetricGenerator {
             System.out.println("url                 " + url);
             System.out.println("service             " + service);
             System.out.println("app                 " + app);
+            System.out.println("app                 " + appType);
             System.out.println("runtime             " + runTime);
             System.out.println("eventNames/thread:  " + eventSignatures);
             System.out.println("tags/thread:        " + tagCount);
@@ -57,7 +59,7 @@ public class MetricGenerator {
 
             for (int i = 0; i < hosts; i++) {
                 String hostname = "host"+i;
-                MetricRegistry mr = new MetricRegistry.Builder(service,app)
+                MetricRegistry mr = new MetricRegistry.Builder(service,app, appType)
                         .withHost(hostname)
                         .build();
                 //DropWizardListener listener = new DropWizardListener("wdc-tst-metrics-001.openmarket.com", 2003, 20);
@@ -103,6 +105,7 @@ public class MetricGenerator {
                     mr.addEventListener(new KairosDBListener(url,
                                                             user,
                                                             pd,
+                                                            mr,
                                                             100));
                     // Graphite dropwizard listener
 

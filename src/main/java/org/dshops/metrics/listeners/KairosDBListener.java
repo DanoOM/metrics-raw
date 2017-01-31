@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.dshops.metrics.DoubleEvent;
 import org.dshops.metrics.Event;
 import org.dshops.metrics.EventListener;
 import org.dshops.metrics.LongEvent;
+import org.dshops.metrics.MetricRegistry;
 import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.builder.MetricBuilder;
 import org.kairosdb.client.response.Response;
@@ -36,26 +38,41 @@ public class KairosDBListener implements EventListener, Runnable {
     private Thread runThread;
     private final HttpClient kairosDb;
     private final static Logger log = LoggerFactory.getLogger(KairosDBListener.class);
+    private final MetricRegistry registry;
+    private final AtomicInteger droppedEvents = new AtomicInteger();
+    private final String serviceTeam;
+    private final String app;
+    private final String appType;
 
     public KairosDBListener(String connectString,
                             String un,
-                            String pd) {
-        this(connectString, un, pd, 100);
+                            String pd,
+                            MetricRegistry registry) {
+        this(connectString, un, pd, registry, 100);
     }
 
     public KairosDBListener(String connectString,
                             String un,
                             String pd,
+                            MetricRegistry registry,
                             int batchSize) {
-        this(connectString,un,pd,batchSize,-1);
+        this(connectString, un, pd, registry, batchSize, 5000, -1);
     }
 
     public KairosDBListener(String connectString,
                             String un,
                             String pd,
+                            MetricRegistry registry,
                             int batchSize,
+                            int bufferSize,
                             long offerTimeMillis) {
-        this.queue = new ArrayBlockingQueue<>(5000);
+    	this.registry = registry;
+    	String[] prefix = registry.getPrefix().split("\\.");
+    	this.serviceTeam = prefix[0];
+    	this.app = prefix[1];
+    	this.appType = prefix[2];
+
+        this.queue = new ArrayBlockingQueue<>(bufferSize);
         if (batchSize > 1) {
             this.batchSize = batchSize;
         }
@@ -79,14 +96,13 @@ public class KairosDBListener implements EventListener, Runnable {
     @Override
     public void run() {
         final List<Event> dispatchList = new ArrayList<>(batchSize);
-        long lastResetTime = 0;
+        long lastResetTime = System.currentTimeMillis();
         long httpCalls = 0;
         long metricCount = 0;
         long errorCount = 0;
         long exceptionTime = 0;
         Response lastError = null;
         do {
-
             try {
                 // block until we have at least 1 metric
                 dispatchList.add(queue.take());
@@ -101,15 +117,17 @@ public class KairosDBListener implements EventListener, Runnable {
                     // flush every second or until we have seen batchSize Events
                 } while(dispatchList.size() < batchSize && (System.currentTimeMillis() - takeTime < 1000));
 
+                // @todo - consider bucketing..we may get multiple datapoints for the same ms, with the same name/tagSet, we will lose data with this approach atm.
                 metricCount += dispatchList.size();
                 Response r = kairosDb.pushMetrics(buildPayload(dispatchList));
                 httpCalls++;
-                if (r.getStatusCode() != 204 ){
+                if (r.getStatusCode() != 204 ) {
                     lastError = r;
                     errorCount++;
                 }
                 // every 5 minutes log a stat
-                if (System.currentTimeMillis() - lastResetTime > 300_000) {
+                if (System.currentTimeMillis() - lastResetTime > 60_000) {
+                	sendMetricStats(metricCount, errorCount, httpCalls);
                     if (lastError != null) {
                         StringBuilder sb = new StringBuilder();
                         for (String s : lastError.getErrors()) {
@@ -120,14 +138,9 @@ public class KairosDBListener implements EventListener, Runnable {
                         if (lastError != null) {
                             log.error("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
                         }
-                        else {
-                            log.info("Http calls:{} Dispatch count: {} errorCount:{} lastError.status:{} lastErrorDetails:{}", httpCalls, metricCount, errorCount, lastError.getStatusCode(), sb.toString());
-                        }
                         lastError = null;
                     }
-                    else {
-                        log.info("Http calls: Dispatch count: ", httpCalls, metricCount);
-                    }
+                    droppedEvents.set(0);
                     httpCalls = 0;
                     errorCount = 0;
                     metricCount = 0;
@@ -138,8 +151,9 @@ public class KairosDBListener implements EventListener, Runnable {
                 break;
             }
             catch(Exception ex) {
+                errorCount++;
                 if (System.currentTimeMillis() - exceptionTime > 60_000) {
-                    log.error("Unexpected Exception (only 1 exception log per minute)", ex);
+                    log.error("Unexpected Exception (only 1 exception logged per minute)", ex);
                 }
                 exceptionTime = System.currentTimeMillis();
             }
@@ -147,6 +161,44 @@ public class KairosDBListener implements EventListener, Runnable {
                 dispatchList.clear();
             }
         } while(true);
+    }
+
+    private void sendMetricStats(long metricCount, long errorCount, long httpCalls) throws Exception {
+    	try{
+	    	MetricBuilder mb = MetricBuilder.getInstance();
+	    	mb.addMetric("metricsraw.stats.data.count")
+	    	  .addTags(registry.getTags())
+	    	  .addTag("serviceTeam",serviceTeam)
+	    	  .addTag("app",app)
+	    	  .addTag("appType",appType)
+	    	  .addDataPoint(metricCount);
+	    	mb.addMetric("metricsraw.stats.http.errors")
+	    	.addTags(registry.getTags())
+            .addTag("serviceTeam",serviceTeam)
+            .addTag("app",app)
+            .addTag("appType",appType)
+	    	  .addDataPoint(errorCount);
+	    	mb.addMetric("metricsraw.stats.http.count")
+	    	.addTags(registry.getTags())
+            .addTag("serviceTeam",serviceTeam)
+            .addTag("app",app)
+            .addTag("appType",appType)
+	    	  .addDataPoint(httpCalls);
+	    	mb.addMetric("metricsraw.stats.data.dropped")
+	    	.addTags(registry.getTags())
+            .addTag("serviceTeam",serviceTeam)
+            .addTag("app",app)
+            .addTag("appType",appType)
+	    	  .addDataPoint(droppedEvents.longValue());
+	    	 Response r = kairosDb.pushMetrics(mb);
+
+             if (r.getStatusCode() != 204 ) {
+                 log.warn("failed to send metric statistics!", r.getStatusCode());
+             }
+    	}
+    	catch(Exception e) {
+    		log.warn("failed to send metric statistis to server! {} ", e.getMessage());
+    	}
     }
 
     private MetricBuilder buildPayload(List<Event> events) {
@@ -176,7 +228,9 @@ public class KairosDBListener implements EventListener, Runnable {
     public void onEvent(Event e) {
         if (offerTime > 0) {
             try {
-                queue.offer(e, offerTime, TimeUnit.MILLISECONDS);
+                if (!queue.offer(e, offerTime, TimeUnit.MILLISECONDS)){
+                	droppedEvents.incrementAndGet();
+                }
             }
             catch(InterruptedException ie) {
                 // swallow
