@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Timer extends MetricBase {
-	protected long startTime;
+	protected Long startTime;
 
     Timer(String name, MetricRegistry registry) {
         super(name, registry, null);
