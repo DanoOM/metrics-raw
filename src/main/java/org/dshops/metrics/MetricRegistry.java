@@ -111,6 +111,18 @@ public class MetricRegistry {
         return timer(name, Util.buildTags(tags));
     }
 
+    /** Counstruct a timer such that timers created in the same name / primaryTag within
+     * the same milli,, will be indexed by an 'index' tag, (allowing sub-millis data resolution) */
+    public Timer indexedTimer(String name, String primaryTag, String...tags) {
+        return timer(name, Util.buildTags(tags));
+    }
+
+    /** Counstruct a timer such that timers created in the same name / primaryTag within
+     * the same milli,, will be indexed by an 'index' tag, (allowing sub-millis data resolution) */
+    public Timer indexedTimer(String name, String primaryTag, Map<String,String> tags) {
+        return new Timer(name, this, tags).start();
+    }
+
     /** Counters not recommended for real use, but may be
      * useful for testing/early integration. */
     public Counter counter(String name) {

@@ -1,0 +1,2 @@
+0.0.5
+ * Added Experimental IndexedTimer - If 2 timers (same name/'primaryTag') are created within the same millisecond, one can have the metricRegistry 'index' the timer within the millisecond, by created a new tag (index) this will enable datastores with only millisecond precision to store the colliding data values. (should only be used if you expect high tps rates on the timer).
