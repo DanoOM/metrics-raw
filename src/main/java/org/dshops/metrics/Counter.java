@@ -8,26 +8,30 @@ public class Counter extends MetricBase {
     private final LongAdder adder = new LongAdder();
 
     public Counter(String name, MetricRegistry registry) {
-        super(name, registry, null);
+        super(name, null, registry, null);
     }
 
     public Counter(String name, MetricRegistry registry, Map<String,String> tags) {
-        super(name, registry, tags);
+        super(name, null, registry, tags);
+    }
+
+    public Counter(String name, String primaryTag, MetricRegistry registry, Map<String,String> tags) {
+        super(name, primaryTag, registry, tags);
     }
 
     public void increment() {
         adder.increment();
-        registry.postEvent(name, System.currentTimeMillis(), adder.longValue(), EventType.Counter); // This 'may not be exact'
+        registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
     public void decrement() {
         adder.decrement();
-        registry.postEvent(name, System.currentTimeMillis(), adder.longValue(), EventType.Counter); // This 'may not be exact'
+        registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
     public void add(long x){
         adder.add(x);
-        registry.postEvent(name, System.currentTimeMillis(), adder.longValue(), EventType.Counter); // This 'may not be exact'
+        registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
     public static class Builder {

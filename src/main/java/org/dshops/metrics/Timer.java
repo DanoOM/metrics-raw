@@ -5,13 +5,22 @@ import java.util.Map;
 
 public class Timer extends MetricBase {
 	protected Long startTime;
+	private Long duration;
+
 
     Timer(String name, MetricRegistry registry) {
-        super(name, registry, null);
+        super(name, null, registry, null);
     }
 
     Timer(String name, MetricRegistry registry, Map<String,String> customTags) {
-        super(name, registry, customTags);
+        super(name, null, registry, customTags);
+    }
+
+    Timer(String name,
+          String primaryTag,
+          MetricRegistry registry,
+          Map<String,String> customTags) {
+        super(name, primaryTag, registry, customTags);
     }
 
     /** Returns a new timer, with startTime = now */
@@ -22,8 +31,9 @@ public class Timer extends MetricBase {
 
     /** calculates the time from the starttime, also triggers an event for Listeners */
     public long stop() {
-    	long duration = System.currentTimeMillis() - startTime;
-    	registry.postEvent(name, startTime, tags, duration, EventType.Timer);
+        if (duration != null) return duration;
+    	duration = System.currentTimeMillis() - startTime;
+    	registry.postEvent(name, primaryTag, startTime, tags, duration);
     	return duration;
     }
 
@@ -44,12 +54,14 @@ public class Timer extends MetricBase {
 
     /** todo This should error out, or 'not' update the duration on an already stopped timer. */
     public long stop(Map<String,String> customTags) {
-    	long duration = System.currentTimeMillis() - startTime;
+        if (duration != null) return duration;
+    	duration = System.currentTimeMillis() - startTime;
     	if (this.tags == null){
     	    this.tags = new HashMap<>();
     	}
     	this.tags.putAll(customTags);
-    	registry.postEvent(name, startTime, this.tags, duration, EventType.Timer);
+    	// note: we should pass in endTime here.. if using kairosdb timeslots..
+    	registry.postEvent(name, primaryTag, startTime, this.tags, duration);
     	return duration;
     }
 

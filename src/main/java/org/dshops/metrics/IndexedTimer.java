@@ -66,7 +66,7 @@ public class IndexedTimer extends Timer {
         }
     	duration = System.currentTimeMillis() - startTime;
     	handleIndexTag(tags);
-    	registry.postEvent(name, startTime, tags, duration, EventType.Timer);
+    	registry.postEvent(name, startTime, tags, duration);
     	return duration;
     }
 
@@ -90,18 +90,17 @@ public class IndexedTimer extends Timer {
     	}
     	this.tags.putAll(customTags);
     	handleIndexTag(customTags);
-    	registry.postEvent(name, startTime, this.tags, duration, EventType.Timer);
+    	registry.postEvent(name, startTime, this.tags, duration);
     	return duration;
     }
 
     private void handleIndexTag(Map<String, String> customTags) {
-        try {
-            Map<Long,AtomicInteger> indexes = collisions.get(name + tags.get(primaryTag));
-            AtomicInteger index = indexes.get(startTime);
-            int idx = index.decrementAndGet();
-            customTags.put("index", idx + "");
-        }catch(Exception e){
-            e.printStackTrace();
+        Map<Long,AtomicInteger> indexes = collisions.get(name + tags.get(primaryTag));
+        AtomicInteger index = indexes.get(startTime);
+        int idx = index.decrementAndGet();
+        customTags.put("index", idx + "");
+        if (idx == 0) {
+            indexes.remove(startTime);
         }
     }
 

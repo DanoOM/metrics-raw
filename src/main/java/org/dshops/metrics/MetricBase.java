@@ -7,11 +7,12 @@ abstract class MetricBase implements Metric {
     protected final String name;
     protected Map<String,String> tags;
     protected final MetricRegistry registry;
-
-    MetricBase(String name, MetricRegistry registry, Map<String,String> tags) {
+    protected final String primaryTag;
+    MetricBase(String name, final String primaryTag, MetricRegistry registry, Map<String,String> tags) {
     	this.name = name;
     	this.registry = registry;
         this.tags = tags;
+        this.primaryTag = primaryTag;
     }
 
     MetricRegistry getMetricRegistry() {

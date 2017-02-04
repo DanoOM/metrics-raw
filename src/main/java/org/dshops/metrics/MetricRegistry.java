@@ -98,20 +98,19 @@ public class MetricRegistry {
     	return new Timer.Builder(name, this);
     }
 
-    public Timer timer(String name, String...tags) {
-    	return timer(name, Util.buildTags(tags));
+  /*  public Timer timer(String name, String...tags) {
+    	return timer(name, "", Util.buildTags(tags));
+    }
+*/
+    public Timer timer(String name, String primaryTag, String...tags) {
+        return timer(name, primaryTag, Util.buildTags(tags));
     }
 
-    public Timer timer(String name, Map<String,String> tags) {
-    	return new Timer(name, this, tags).start();
+    public Timer timer(String name, String primaryTag, Map<String,String> tags) {
+    	return new Timer(name, primaryTag, this, tags).start();
     }
 
-    // construct a timer, but aggregate time values into buckets of size bucketTimeSeconds
-    public Timer timer(String name, int bucketTimeSeconds, String...tags) {
-        return timer(name, Util.buildTags(tags));
-    }
-
-    /** Counstruct a timer such that timers created in the same name / primaryTag within
+     /** Counstruct a timer such that timers created in the same name / primaryTag within
      * the same milli,, will be indexed by an 'index' tag, (allowing sub-millis data resolution) */
     public Timer indexedTimer(String name, String primaryTag, String...tags) {
         return indexedTimer(name, primaryTag, Util.buildTags(tags));
@@ -173,11 +172,11 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value) {
-        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),value));
     }
 
     public void event(String name, double value) {
-        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name, tags, System.currentTimeMillis(),value));
     }
 
     public void event(String name, String...customTags) {
@@ -185,10 +184,10 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value, String...customTags) {
-        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), System.currentTimeMillis(),value));
     }
     public void event(String name, double value, String...customTags) {
-        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags), System.currentTimeMillis(),value));
     }
 
     public void event(String name, Map<String,String> customTags) {
@@ -204,7 +203,7 @@ public class MetricRegistry {
         if (customTags != null) {
             ctags.putAll(customTags);
         }
-        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),value));
     }
 
     public void event(String name, double value, Map<String,String> customTags) {
@@ -216,11 +215,11 @@ public class MetricRegistry {
         if (customTags != null) {
             ctags.putAll(customTags);
         }
-        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name, tags, System.currentTimeMillis(),value));
     }
 
     public EventImpl.Builder eventWithTags(String name) {
-        return new EventImpl.Builder(name, this, EventType.Event);
+        return new EventImpl.Builder(name, this);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -267,7 +266,7 @@ public class MetricRegistry {
 
     Map<MetricKey, ConcurrentSkipListMap<Long, Collection<Number>>> data = new ConcurrentSkipListMap<>(); // ts/value
 
-    void addToBucket(String name, Map<String,String> customTags, long ts, Number number, EventType type) {
+    void addToBucket(String name, Map<String,String> customTags, long ts, Number number) {
         MetricKey key = new MetricKey(name, customTags);
         ConcurrentSkipListMap<Long, Collection<Number>> buckets = data.get(key);
         if (buckets == null) {
@@ -291,7 +290,10 @@ public class MetricRegistry {
         values.add(duration);
     }
 
-    void postEvent(String name, long ts, Map<String,String> customTags, Number number, EventType type) {
+    void postEvent(String name, long ts, Map<String,String> customTags, Number number) {
+        postEvent(name, null, ts, customTags, number);
+    }
+    void postEvent(String name, String primaryTag, long ts, Map<String,String> customTags, Number number) {
         EventImpl e;
         Map<String,String> ctags = new HashMap<>();
 
@@ -303,22 +305,22 @@ public class MetricRegistry {
         }
 
         if (number instanceof Double) {
-            e = new DoubleEvent(prefix + name, ctags, type, ts, number.doubleValue());
+            e = new DoubleEvent(prefix + name, primaryTag, ctags,ts, number.doubleValue());
         }
         else {
-            e = new LongEvent(prefix + name, ctags, type, ts, number.longValue());
+            e = new LongEvent(prefix + name, primaryTag, ctags, ts, number.longValue());
         }
         dispatchEvent(e);
     }
 
-    void postEvent(String name, long ts, long value, EventType type) {
-        EventImpl e = new LongEvent(prefix + name, tags, type, ts, value);
+    void postEvent(String name, long ts, long value) {
+        EventImpl e = new LongEvent(prefix + name, tags, ts, value);
         dispatchEvent(e);
 
     }
 
-    void postEvent(String name, long ts, double value, EventType type) {
-        EventImpl e = new DoubleEvent(prefix + name, tags, type, ts, value);
+    void postEvent(String name, long ts, double value) {
+        EventImpl e = new DoubleEvent(prefix + name, tags, ts, value);
         dispatchEvent(e);
     }
 
