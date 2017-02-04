@@ -5,13 +5,17 @@ import java.util.Map;
 
 public class Timer extends MetricBase {
 	protected long startTime;
+	private final boolean useStartTimeAsEventTime;
 
-    Timer(String name, MetricRegistry registry) {
+    Timer(String name, MetricRegistry registry, boolean useStartTimeAsEventTime) {
         super(name, registry, null);
+        this.useStartTimeAsEventTime = useStartTimeAsEventTime;
+
     }
 
-    Timer(String name, MetricRegistry registry, Map<String,String> customTags) {
+    Timer(String name, MetricRegistry registry, Map<String,String> customTags, boolean useStartTimeAsEventTime) {
         super(name, registry, customTags);
+        this.useStartTimeAsEventTime = useStartTimeAsEventTime;
     }
 
     /** Returns a new timer, with startTime = now */
@@ -23,7 +27,11 @@ public class Timer extends MetricBase {
     /** calculates the time from the starttime, also triggers an event for Listeners */
     public long stop() {
     	long duration = System.currentTimeMillis() - startTime;
-    	registry.postEvent(name, startTime, tags, duration, EventType.Timer);
+    	registry.postEvent(name,
+    	                   useStartTimeAsEventTime ? startTime : startTime+duration,
+    	                   tags,
+    	                   duration,
+    	                   EventType.Timer);
     	return duration;
     }
 
@@ -49,14 +57,18 @@ public class Timer extends MetricBase {
     	    this.tags = new HashMap<>();
     	}
     	this.tags.putAll(customTags);
-    	registry.postEvent(name, startTime, this.tags, duration, EventType.Timer);
+    	registry.postEvent(name,
+    	                   useStartTimeAsEventTime ? startTime : startTime+duration,
+    	                   this.tags,
+    	                   duration,
+    	                   EventType.Timer);
     	return duration;
     }
 
     public static class Builder {
     	private Timer timer;
-        Builder(String name, MetricRegistry registry) {
-            this.timer = new Timer(name, registry, new HashMap<>());
+        Builder(String name, MetricRegistry registry, boolean useStartTimeAsEventTime) {
+            this.timer = new Timer(name, registry, new HashMap<>(), useStartTimeAsEventTime);
         }
 
         public Builder addTag(String name, String value) {

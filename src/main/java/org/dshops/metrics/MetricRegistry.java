@@ -21,6 +21,7 @@ public class MetricRegistry {
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10);
     // registries stored by prefix
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+    private boolean useStartTimeAsEventTime = true;
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
@@ -42,6 +43,11 @@ public class MetricRegistry {
 
         public Builder withHost(String host) {
             tags.put("host", host);
+            return this;
+        }
+
+        public Builder withTimerStrategy(boolean useStartTimeAsEventTime) {
+            useStartTimeAsEventTime = useStartTimeAsEventTime;
             return this;
         }
 
@@ -91,11 +97,11 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name) {
-    	return new Timer(name, this).start();
+    	return new Timer(name, this, useStartTimeAsEventTime).start();
     }
 
     public Timer.Builder timerWithTags(String name) {
-    	return new Timer.Builder(name, this);
+    	return new Timer.Builder(name, this,useStartTimeAsEventTime);
     }
 
     public Timer timer(String name, String...tags) {
@@ -103,7 +109,7 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name, Map<String,String> tags) {
-    	return new Timer(name, this, tags).start();
+    	return new Timer(name, this, tags, useStartTimeAsEventTime).start();
     }
 
     // construct a timer, but aggregate time values into buckets of size bucketTimeSeconds
@@ -319,53 +325,5 @@ public class MetricRegistry {
     }
 }
 
-// used when counters/gauges are created
-// consideration: if remove counters from the system
-// and 'allow' users to create duplicate gauges, this and their internal
-// maps can be removed.
-class MetricKey {
-  	final String name;
-    final Map<String,String> tags;
 
-    public MetricKey(String name) {
-        this.name = name;
-        this.tags = null;
-    }
-
-    public MetricKey(String name, Map<String,String> tags) {
-        this.name = name;
-        this.tags = tags;
-    }
-
-    @Override
-  	public int hashCode() {
-  		final int prime = 31;
-  		int result = 1;
-  		result = prime * result + ((name == null) ? 0 : name.hashCode());
-  		result = prime * result + ((tags == null) ? 0 : tags.hashCode());
-  		return result;
-  	}
-
-  	@Override
-  	public boolean equals(Object obj) {
-  		if (this == obj)
-  			return true;
-  		if (obj == null)
-  			return false;
-  		if (getClass() != obj.getClass())
-  			return false;
-  		MetricKey other = (MetricKey) obj;
-  		if (name == null) {
-  			if (other.name != null)
-  				return false;
-  		} else if (!name.equals(other.name))
-  			return false;
-  		if (tags == null) {
-  			if (other.tags != null)
-  				return false;
-  		} else if (!tags.equals(other.tags))
-  			return false;
-  		return true;
-  	}
-}
 

@@ -10,6 +10,5 @@ public interface Event {
 
     default public long getLongValue(){ return 1; }
     default public double getDoubleValue(){ return 0;}
-
-
+    public MetricKey getHash();
 }

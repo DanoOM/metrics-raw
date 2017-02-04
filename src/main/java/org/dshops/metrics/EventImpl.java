@@ -9,6 +9,7 @@ public abstract class EventImpl implements Event {
     protected Map<String,String> tags;        // tags associated to event
     protected final long time;                // time of event
     protected final EventType eventType;
+    private MetricKey metricKey;
 
     EventImpl(final String name, final Map<String,String> tags, final EventType type, final long time) {
         this.name = name;
@@ -68,6 +69,14 @@ public abstract class EventImpl implements Event {
         public void build() {
             this.registry.dispatchEvent(this.event);
         }
+    }
+
+    @Override
+    public MetricKey getHash() {
+        if (metricKey == null) {
+            metricKey = new MetricKey(name, tags);
+        }
+        return metricKey;
     }
 
 }
