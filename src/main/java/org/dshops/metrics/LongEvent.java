@@ -4,8 +4,8 @@ import java.util.Map;
 
 public class LongEvent extends EventImpl {
     long value;
-    LongEvent(final String name, final Map<String,String> tags, EventType type, final long time, long value) {
-        super(name,tags,type, time);
+    LongEvent(final String name, final Map<String,String> tags, final long time, long value) {
+        super(name,tags,time);
         this.value = value;
     }
 

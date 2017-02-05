@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 /** The kairosIndexedDBListener, differs from the KairosDBListener, in that
  * the Indexed version can handle multiple data points per millisecond.  For each metric
  * written a new tag will be added:
- *   index
- * if the same metric-Name+tagSet occurs within the same millisecond, and index value will generated
+ *      index
+ * if the same metricName+tagSet occurs within the same millisecond, and index value will generated
  * based on the number of events within the millisecond.
  *
  * The Standard KairosDBListener - will result in dataloss, as the last metricname/tagset combo will replaces previous datapoints.
@@ -58,7 +58,8 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
     private final String serviceTeam;
     private final String app;
     private final String appType;
-    private final int bufferSize;
+    private final int bufferLimit;
+    private final AtomicInteger bufferedEvents = new AtomicInteger();
 
     public KairosIndexedDBListener(String connectString,
                             String un,
@@ -87,7 +88,7 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
         this.serviceTeam = prefix[0];
         this.app = prefix[1];
         this.appType = prefix[2];
-        this.bufferSize = bufferSize;
+        this.bufferLimit = bufferSize;
 
         if (batchSize > 1) {
             this.batchSize = batchSize;
@@ -98,7 +99,14 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
 
         this.offerTime = offerTimeMillis;
         try {
-            kairosDb = new HttpClient(connectString);
+            if (connectString != null) {
+                // todo: no way configure timeout?
+                kairosDb = new HttpClient(connectString);
+            }
+            else {
+                log.warn("kairosDb Url is null - running in noop mode.");
+                kairosDb = null;
+            }
         }
         catch(MalformedURLException mue) {
             throw new RuntimeException("Malformed Url:"+connectString+" "+mue.getMessage());
@@ -124,15 +132,18 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
                 if(!dispatchList.isEmpty()) {
                     // @todo - consider bucketing..we may get multiple datapoints for the same ms, with the same name/tagSet, we will lose data with this approach atm.
                     metricCount += dispatchList.size();
-                    Response r = kairosDb.pushMetrics(buildPayload(dispatchList));
-                    httpCalls++;
-                    if (r.getStatusCode() != 204 ) {
-                        lastError = r;
-                        errorCount++;
+                    if (kairosDb != null) {
+                        Response r = kairosDb.pushMetrics(buildPayload(dispatchList));
+                        httpCalls++;
+                        if (r.getStatusCode() != 204 ) {
+                            lastError = r;
+                            errorCount++;
+                        }
                     }
-                    // every 5 minutes log a stat
+                    // Generate stat info
                     if (System.currentTimeMillis() - lastResetTime > 60_000) {
                         sendMetricStats(metricCount, errorCount, httpCalls);
+
                         if (lastError != null) {
                             StringBuilder sb = new StringBuilder();
                             for (String s : lastError.getErrors()) {
@@ -169,9 +180,9 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
         } while(true);
     }
 
-    // move events from the buffer to the dispatchList, exists if over 1000 second of processing
-    // or we have exceeded batchSize.  (any timeSlot started, will result in all events from that
-    // timeslot being added to dispatchList.
+    // move events from the MetricBuffer to the dispatchList, will exist if over 1000 second of processing
+    // or we have exceeded batchSize.
+    // Any timeSlot started, will result in all events from that timeslot being added to dispatchList.
     private void addNewEvents(final List<IndexedEvent> dispatchList) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         do {
@@ -181,15 +192,14 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
                 ts = entry.getKey();
                 if (ts != null && ts < System.currentTimeMillis() - 100) {
                     MetricTimeSlot timeSlot = metricBuffer.remove(ts);
-                    // TODO: consider: this will process all events of all metricTypes, regardless of batchSize
-                    // ie. we could send more then 'batchSize'
                     for (Map.Entry<MetricKey, ConcurrentLinkedQueue<Event>> metricEvents : timeSlot.metricMap.entrySet()){
                         int i = 0;
                         for (Event event: metricEvents.getValue()) {
                             dispatchList.add(new IndexedEvent(event, i++));
+                            bufferedEvents.decrementAndGet();
                         }
                     }
-                    // send what we have if we have exceeded batchSize, or have gone over 1000 second.
+                    // send what we have if we have exceeded batchSize, or have gone over 1 second.
                     if (dispatchList.size() > batchSize || System.currentTimeMillis() - startTime > 1000) {
                         break;
                     }
@@ -204,7 +214,8 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
 
 
     private void sendMetricStats(long metricCount, long errorCount, long httpCalls) throws Exception {
-        try{
+        if (kairosDb == null) return;
+        try {
             MetricBuilder mb = MetricBuilder.getInstance();
             mb.addMetric("metricsraw.stats.data.count")
               .addTags(registry.getTags())
@@ -230,8 +241,8 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
             .addTag("app",app)
             .addTag("appType",appType)
               .addDataPoint(droppedEvents.longValue());
-             Response r = kairosDb.pushMetrics(mb);
 
+             Response r = kairosDb.pushMetrics(mb);
              if (r.getStatusCode() != 204 ) {
                  log.warn("failed to send metric statistics!", r.getStatusCode());
              }
@@ -270,12 +281,34 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
 
     @Override
     public int eventsBuffered() {
-        return metricBuffer.size();
+        return bufferedEvents.get();
     }
 
     @Override
     public void onEvent(Event e) {
-        // TODO: bufferLimit and offerTime..
+
+        if (bufferedEvents.get() > bufferLimit) {
+            if (offerTime > 0) {
+                try {
+                    long startTime = System.currentTimeMillis();
+                    while (bufferedEvents.get() > bufferLimit && System.currentTimeMillis() - startTime < offerTime) {
+                        Thread.sleep(10);
+                    }
+                    if (bufferedEvents.get() > bufferLimit){
+                        droppedEvents.incrementAndGet();
+                        return;
+                    }
+                }
+                catch(InterruptedException ie) {
+                    return;
+                }
+            }
+            else {
+                droppedEvents.incrementAndGet();
+                return;
+            }
+        }
+
         MetricTimeSlot timeSlot = metricBuffer.get(e.getTimestamp());
         if (timeSlot == null) {
             timeSlot = new MetricTimeSlot();
@@ -285,6 +318,7 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
         if (events == null) {
             events = new ConcurrentLinkedQueue<>();
             timeSlot.metricMap.put(e.getHash(), events);
+            bufferedEvents.incrementAndGet();
         }
         events.add(e);
     }

@@ -1,0 +1,6 @@
+0.0.7
+* Added KairosIndexedDBListener - handles data collisions within millisecond, by 'indexing' the event.
+* Removed EventType - was never used
+* Updated MetricRegistry Builder, renamed withHost, withDatacenter to withHostTag, withDatacenterTag
+* Gauge threads changed to Daemon Threads.
+* updated Test.java - to generate events for each metric type.

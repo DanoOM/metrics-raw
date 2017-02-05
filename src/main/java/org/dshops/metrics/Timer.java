@@ -30,8 +30,7 @@ public class Timer extends MetricBase {
     	registry.postEvent(name,
     	                   useStartTimeAsEventTime ? startTime : startTime+duration,
     	                   tags,
-    	                   duration,
-    	                   EventType.Timer);
+    	                   duration);
     	return duration;
     }
 
@@ -60,8 +59,7 @@ public class Timer extends MetricBase {
     	registry.postEvent(name,
     	                   useStartTimeAsEventTime ? startTime : startTime+duration,
     	                   this.tags,
-    	                   duration,
-    	                   EventType.Timer);
+    	                   duration);
     	return duration;
     }
 
