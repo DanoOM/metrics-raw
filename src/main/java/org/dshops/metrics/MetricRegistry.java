@@ -23,7 +23,7 @@ public class MetricRegistry {
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10, new DaemonThreadFactory());
     // registries stored by prefix
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
-    private boolean useStartTimeAsEventTime = true;
+    private boolean useStartTimeAsEventTime = false;
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
@@ -48,6 +48,7 @@ public class MetricRegistry {
             return this;
         }
 
+        // default is false
         public Builder withTimerStrategy(boolean useStartTimeAsEventTime) {
             useStartTimeAsEventTime = useStartTimeAsEventTime;
             return this;
