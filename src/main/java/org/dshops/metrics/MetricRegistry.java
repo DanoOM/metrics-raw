@@ -10,7 +10,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MetricRegistry {
 	private final String prefix;
@@ -18,9 +20,10 @@ public class MetricRegistry {
     private final Map<MetricKey, Counter> counters = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
-    private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10);
+    private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10, new DaemonThreadFactory());
     // registries stored by prefix
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+    private boolean useStartTimeAsEventTime = false;
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
@@ -40,12 +43,18 @@ public class MetricRegistry {
         	prefix = serviceTeam + "." + application + "." + applicationType + ".";
         }
 
-        public Builder withHost(String host) {
+        public Builder withHostTag(String host) {
             tags.put("host", host);
             return this;
         }
 
-        public Builder withDatacenter(String datacenter){
+        // default is false
+        public Builder withTimerStrategy(boolean useStartTimeAsEventTime) {
+            useStartTimeAsEventTime = useStartTimeAsEventTime;
+            return this;
+        }
+
+        public Builder withDatacenterTag(String datacenter){
             tags.put("datacenter", datacenter);
             return this;
         }
@@ -91,11 +100,11 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name) {
-    	return new Timer(name, this).start();
+    	return new Timer(name, this, useStartTimeAsEventTime).start();
     }
 
     public Timer.Builder timerWithTags(String name) {
-    	return new Timer.Builder(name, this);
+    	return new Timer.Builder(name, this,useStartTimeAsEventTime);
     }
 
     public Timer timer(String name, String...tags) {
@@ -103,7 +112,7 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name, Map<String,String> tags) {
-    	return new Timer(name, this, tags).start();
+    	return new Timer(name, this, tags, useStartTimeAsEventTime).start();
     }
 
     // construct a timer, but aggregate time values into buckets of size bucketTimeSeconds
@@ -173,11 +182,11 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value) {
-        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name, tags,  System.currentTimeMillis(),value));
     }
 
     public void event(String name, double value) {
-        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name, tags,  System.currentTimeMillis(),value));
     }
 
     public void event(String name, String...customTags) {
@@ -185,10 +194,10 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value, String...customTags) {
-        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags),  System.currentTimeMillis(),value));
     }
     public void event(String name, double value, String...customTags) {
-        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags), EventType.Event, System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags),  System.currentTimeMillis(),value));
     }
 
     public void event(String name, Map<String,String> customTags) {
@@ -204,7 +213,7 @@ public class MetricRegistry {
         if (customTags != null) {
             ctags.putAll(customTags);
         }
-        dispatchEvent(new LongEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),value));
     }
 
     public void event(String name, double value, Map<String,String> customTags) {
@@ -216,11 +225,11 @@ public class MetricRegistry {
         if (customTags != null) {
             ctags.putAll(customTags);
         }
-        dispatchEvent(new DoubleEvent(prefix + name, tags, EventType.Event,  System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name, tags, System.currentTimeMillis(),value));
     }
 
     public EventImpl.Builder eventWithTags(String name) {
-        return new EventImpl.Builder(name, this, EventType.Event);
+        return new EventImpl.Builder(name, this);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -267,7 +276,7 @@ public class MetricRegistry {
 
     Map<MetricKey, ConcurrentSkipListMap<Long, Collection<Number>>> data = new ConcurrentSkipListMap<>(); // ts/value
 
-    void addToBucket(String name, Map<String,String> customTags, long ts, Number number, EventType type) {
+    void addToBucket(String name, Map<String,String> customTags, long ts, Number number) {
         MetricKey key = new MetricKey(name, customTags);
         ConcurrentSkipListMap<Long, Collection<Number>> buckets = data.get(key);
         if (buckets == null) {
@@ -291,7 +300,7 @@ public class MetricRegistry {
         values.add(duration);
     }
 
-    void postEvent(String name, long ts, Map<String,String> customTags, Number number, EventType type) {
+    void postEvent(String name, long ts, Map<String,String> customTags, Number number) {
         EventImpl e;
         Map<String,String> ctags = new HashMap<>();
 
@@ -303,22 +312,21 @@ public class MetricRegistry {
         }
 
         if (number instanceof Double) {
-            e = new DoubleEvent(prefix + name, ctags, type, ts, number.doubleValue());
+            e = new DoubleEvent(prefix + name, ctags, ts, number.doubleValue());
         }
         else {
-            e = new LongEvent(prefix + name, ctags, type, ts, number.longValue());
+            e = new LongEvent(prefix + name, ctags, ts, number.longValue());
         }
         dispatchEvent(e);
     }
 
-    void postEvent(String name, long ts, long value, EventType type) {
-        EventImpl e = new LongEvent(prefix + name, tags, type, ts, value);
+    void postEvent(String name, long ts, long value) {
+        EventImpl e = new LongEvent(prefix + name, tags, ts, value);
         dispatchEvent(e);
-
     }
 
-    void postEvent(String name, long ts, double value, EventType type) {
-        EventImpl e = new DoubleEvent(prefix + name, tags, type, ts, value);
+    void postEvent(String name, long ts, double value) {
+        EventImpl e = new DoubleEvent(prefix + name, tags, ts, value);
         dispatchEvent(e);
     }
 
@@ -331,53 +339,16 @@ public class MetricRegistry {
     }
 }
 
-// used when counters/gauges are created
-// consideration: if remove counters from the system
-// and 'allow' users to create duplicate gauges, this and their internal
-// maps can be removed.
-class MetricKey {
-  	final String name;
-    final Map<String,String> tags;
 
-    public MetricKey(String name) {
-        this.name = name;
-        this.tags = null;
-    }
 
-    public MetricKey(String name, Map<String,String> tags) {
-        this.name = name;
-        this.tags = tags;
-    }
-
+class DaemonThreadFactory implements ThreadFactory {
+    private final AtomicInteger counter = new AtomicInteger();
     @Override
-  	public int hashCode() {
-  		final int prime = 31;
-  		int result = 1;
-  		result = prime * result + ((name == null) ? 0 : name.hashCode());
-  		result = prime * result + ((tags == null) ? 0 : tags.hashCode());
-  		return result;
-  	}
-
-  	@Override
-  	public boolean equals(Object obj) {
-  		if (this == obj)
-  			return true;
-  		if (obj == null)
-  			return false;
-  		if (getClass() != obj.getClass())
-  			return false;
-  		MetricKey other = (MetricKey) obj;
-  		if (name == null) {
-  			if (other.name != null)
-  				return false;
-  		} else if (!name.equals(other.name))
-  			return false;
-  		if (tags == null) {
-  			if (other.tags != null)
-  				return false;
-  		} else if (!tags.equals(other.tags))
-  			return false;
-  		return true;
-  	}
+    public Thread newThread(Runnable r) {
+        Thread t = new Thread(r);
+        t.setName("metric-raw-" + (counter.incrementAndGet()));
+        t.setDaemon(true);
+        return t;
+    }
 }
 

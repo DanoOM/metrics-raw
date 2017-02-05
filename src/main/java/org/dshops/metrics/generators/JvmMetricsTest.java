@@ -43,8 +43,8 @@ public class JvmMetricsTest {
 
     public MetricRegistry getRegistry() {
         return new MetricRegistry.Builder("dshops","metrics", "test")
-                                 .withDatacenter("dataCenter1")
-                                 .withHost("host-1.xyz.org")
+                                 .withDatacenterTag("dataCenter1")
+                                 .withHostTag("host-1.xyz.org")
                                  .build();
     }
 }

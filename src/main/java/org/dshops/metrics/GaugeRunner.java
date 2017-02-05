@@ -13,6 +13,6 @@ class GaugeRunner<T extends Number> implements Runnable {
 
     @Override
     public void run() {
-        this.registry.postEvent(this.key.name, System.currentTimeMillis(), this.key.tags, gauge.getValue(), EventType.Guage);
+        this.registry.postEvent(this.key.name, System.currentTimeMillis(), this.key.tags, gauge.getValue());
     }
 }

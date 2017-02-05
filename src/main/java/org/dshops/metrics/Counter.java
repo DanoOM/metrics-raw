@@ -17,17 +17,17 @@ public class Counter extends MetricBase {
 
     public void increment() {
         adder.increment();
-        registry.postEvent(name, System.currentTimeMillis(), adder.longValue(), EventType.Counter); // This 'may not be exact'
+        registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
     public void decrement() {
         adder.decrement();
-        registry.postEvent(name, System.currentTimeMillis(), adder.longValue(), EventType.Counter); // This 'may not be exact'
+        registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
     public void add(long x){
         adder.add(x);
-        registry.postEvent(name, System.currentTimeMillis(), adder.longValue(), EventType.Counter); // This 'may not be exact'
+        registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
     public static class Builder {
