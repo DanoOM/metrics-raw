@@ -1,13 +1,10 @@
 package org.dshops.metrics;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -31,31 +28,30 @@ public class MetricRegistry {
 
         /** @param serviceTeam - application Domain (service team)
          *  @param application  - application name
+         *  @param applicationType - The type of application/library - aka, server, client, test, etc.
+         *  @param hostTag - The hostTag these metrics should be associated with
+         *  @param datacenterTag = The datacenter tag these metrics should be associated with.
          *  A prefix for each metric will be generated, serviceTeam.Aapplication.
          *
          *  */
-        public Builder(String serviceTeam, String application, String applicationType) {
+        public Builder(String serviceTeam,
+                       String application,
+                       String applicationType,
+                       String hostTag,
+                       String datacenterTag) {
         	if (serviceTeam == null || application == null || applicationType == null)
         		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot be null");
-        	if (serviceTeam.contains(".") || application.contains(".") || applicationType.contains(".")){
+        	if (serviceTeam.contains(".") || application.contains(".") || applicationType.contains("."))
         		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot contain the character '.'");
-        	}
-        	prefix = serviceTeam + "." + application + "." + applicationType + ".";
-        }
 
-        public Builder withHostTag(String host) {
-            tags.put("host", host);
-            return this;
+        	prefix = serviceTeam + "." + application + "." + applicationType + ".";
+            tags.put("host", hostTag);
+            tags.put("datacenter", hostTag);
         }
 
         // default is false
         public Builder withTimerStrategy(boolean useStartTimeAsEventTime) {
             useStartTimeAsEventTime = useStartTimeAsEventTime;
-            return this;
-        }
-
-        public Builder withDatacenterTag(String datacenter){
-            tags.put("datacenter", datacenter);
             return this;
         }
 
@@ -260,32 +256,6 @@ public class MetricRegistry {
 
     public List<EventListener> getListeners() {
         return Collections.unmodifiableList(listeners);
-    }
-
-    Map<MetricKey, ConcurrentSkipListMap<Long, Collection<Number>>> data = new ConcurrentSkipListMap<>(); // ts/value
-
-    void addToBucket(String name, Map<String,String> customTags, long ts, Number number) {
-        MetricKey key = new MetricKey(name, customTags);
-        ConcurrentSkipListMap<Long, Collection<Number>> buckets = data.get(key);
-        if (buckets == null) {
-            synchronized (data) {
-                buckets = data.get(key);
-                if (buckets == null) {
-                    buckets = new ConcurrentSkipListMap<>();
-                    data.put(key, buckets);
-                }
-            }
-        }
-        addMetric(ts, number, buckets);
-    }
-
-    private void addMetric(long endTime, Number duration, ConcurrentSkipListMap<Long,Collection<Number>> buckets) {
-        Collection<Number> values = buckets.get(endTime);
-        if (values == null) {
-            values = new ConcurrentLinkedQueue<>();
-            buckets.put(endTime, values);
-        }
-        values.add(duration);
     }
 
     void postEvent(String name, long ts, Map<String,String> customTags, Number number) {

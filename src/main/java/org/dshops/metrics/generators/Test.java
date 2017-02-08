@@ -10,7 +10,12 @@ import org.dshops.metrics.listeners.KairosIndexedDBListener;
 public class Test {
 
     public static void main(String[] args) {
-        MetricRegistry mr = new MetricRegistry.Builder("dshops","metrics", "test").withHostTag("DanHost").build();
+        MetricRegistry mr = new MetricRegistry.Builder("dshops",
+                                                       "metrics",
+                                                       "test",
+                                                       "DanHost",
+                                                       "danDatacenter").build();
+
         mr.addEventListener(new ConsoleListener(System.out));
         mr.addEventListener(new KairosIndexedDBListener("http://wdc-tst-masapp-001:8080", "root", "root", mr));
 

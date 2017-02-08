@@ -59,11 +59,7 @@ public class MetricGenerator {
 
             for (int i = 0; i < hosts; i++) {
                 String hostname = "host"+i;
-                MetricRegistry mr = new MetricRegistry.Builder(service,app, appType)
-                        .withHostTag(hostname)
-                        .build();
-                //DropWizardListener listener = new DropWizardListener("wdc-tst-metrics-001.openmarket.com", 2003, 20);
-                //mr.addEventListener(listener);
+                MetricRegistry mr = new MetricRegistry.Builder(service, app, appType, "hostname", "datacenter1").build();
 
                 if (writeTps > 0) {
                     writers[i] = new EventGenerator(hostname,

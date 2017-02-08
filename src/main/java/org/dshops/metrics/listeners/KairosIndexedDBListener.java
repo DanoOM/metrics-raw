@@ -190,9 +190,9 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
             Map.Entry<Long,MetricTimeSlot> entry = metricBuffer.firstEntry();
             if (entry != null) {
                 ts = entry.getKey();
-                if (ts != null && ts < System.currentTimeMillis() - 100) {
+                if (ts != null && ts < System.currentTimeMillis() - 50) {
                     MetricTimeSlot timeSlot = metricBuffer.remove(ts);
-                    for (Map.Entry<MetricKey, ConcurrentLinkedQueue<Event>> metricEvents : timeSlot.metricMap.entrySet()){
+                    for (Map.Entry<MetricKey, ConcurrentLinkedQueue<Event>> metricEvents : timeSlot.metricMap.entrySet()) {
                         int i = 0;
                         for (Event event: metricEvents.getValue()) {
                             dispatchList.add(new IndexedEvent(event, i++));
@@ -206,7 +206,7 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
                 }
             }
             else {
-                Thread.sleep(10);
+                Thread.sleep(50);
             }
         } while(true);
     }
