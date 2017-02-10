@@ -5,7 +5,7 @@ import java.util.Random;
 import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.Timer;
 import org.dshops.metrics.listeners.ConsoleListener;
-import org.dshops.metrics.listeners.KairosIndexedDBListener;
+import org.dshops.metrics.listeners.KairosDBListener;
 
 public class Test {
 
@@ -17,7 +17,7 @@ public class Test {
                                                        "danDatacenter").build();
 
         mr.addEventListener(new ConsoleListener(System.out));
-        mr.addEventListener(new KairosIndexedDBListener("http://wdc-tst-masapp-001:8080", "root", "root", mr));
+        mr.addEventListener(new KairosDBListener("http://wdc-tst-masapp-001:8080", "root", "root", mr));
 
         //  basic timer test
         Timer t = mr.timer("testTimer", "tag1","tagValue1").addTag("tag2", "tagValue2");
