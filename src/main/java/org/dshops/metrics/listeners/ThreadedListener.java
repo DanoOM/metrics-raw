@@ -5,7 +5,7 @@ import org.dshops.metrics.EventListener;
 public abstract class ThreadedListener implements EventListener {
     protected Thread runThread;
     protected boolean stopRequested = false;
-    
+
     @Override
     public void stop() {
         if(runThread != null && runThread.isAlive()) {

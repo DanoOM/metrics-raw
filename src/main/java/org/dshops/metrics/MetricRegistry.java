@@ -46,7 +46,7 @@ public class MetricRegistry {
 
         	prefix = serviceTeam + "." + application + "." + applicationType + ".";
             tags.put("host", hostTag);
-            tags.put("datacenter", hostTag);
+            tags.put("datacenter", datacenterTag);
         }
 
         // default is false
