@@ -17,12 +17,11 @@ import org.dshops.metrics.EventListener;
  *
  * NOTE: tags/value are optional
  * */
-public class ConsoleListener implements EventListener, Runnable {
+public class ConsoleListener extends ThreadedListener implements Runnable {
 
     private final BlockingQueue<Event> queue;
     private final int batchSize;
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
-    private Thread runThread;
     private final PrintStream outStream;
 
     public ConsoleListener(PrintStream outStream) {
@@ -57,7 +56,7 @@ public class ConsoleListener implements EventListener, Runnable {
                 queue.drainTo(dispatchList, batchSize - 1);
                 dispatchList.stream().forEach(event -> outStream.println(event));
                 dispatchList.clear();
-            } while(true);
+            } while(!stopRequested);
         }
         catch(InterruptedException ie) {
             // assuming system exist.

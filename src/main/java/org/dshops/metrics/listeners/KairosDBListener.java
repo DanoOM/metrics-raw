@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.dshops.metrics.DoubleEvent;
 import org.dshops.metrics.Event;
-import org.dshops.metrics.EventListener;
 import org.dshops.metrics.LongEvent;
 import org.dshops.metrics.MetricKey;
 import org.dshops.metrics.MetricRegistry;
@@ -44,9 +43,7 @@ import org.slf4j.LoggerFactory;
  *  **NOTE: Timer Events as implemented are tagged based on their startTime, this is incompatible.
  *
  * */
-public class KairosDBListener implements EventListener, Runnable {
-
-    //private final BlockingQueue<Event> queue;
+public class KairosDBListener extends ThreadedListener implements Runnable {
     private final ConcurrentSkipListMap<Long,MetricTimeSlot> metricBuffer = new ConcurrentSkipListMap<>(); // time/
     private final int batchSize;
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
@@ -177,7 +174,7 @@ public class KairosDBListener implements EventListener, Runnable {
             finally {
                 dispatchList.clear();
             }
-        } while(true);
+        } while(!stopRequested);
     }
 
     // move events from the MetricBuffer to the dispatchList, will exist if over 1000 second of processing
