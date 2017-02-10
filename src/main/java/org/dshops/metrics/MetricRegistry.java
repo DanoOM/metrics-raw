@@ -247,10 +247,14 @@ public class MetricRegistry {
     }
 
     public void removeEventListener(EventListener listener) {
+        listener.stop();
         listeners.remove(listener);
     }
 
     public void removeAllEventListeners() {
+        for(EventListener listener : listeners) {
+            listener.stop();
+        }
         listeners.clear();
     }
 

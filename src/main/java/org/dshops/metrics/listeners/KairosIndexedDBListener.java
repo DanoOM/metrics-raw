@@ -44,13 +44,12 @@ import org.slf4j.LoggerFactory;
  *  **NOTE: Timer Events as implemented are tagged based on their startTime, this is incompatible.
  *
  * */
-public class KairosIndexedDBListener implements EventListener, Runnable {
+public class KairosIndexedDBListener extends ThreadedListener implements Runnable {
 
     //private final BlockingQueue<Event> queue;
     private final ConcurrentSkipListMap<Long,MetricTimeSlot> metricBuffer = new ConcurrentSkipListMap<>(); // time/
     private final int batchSize;
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
-    private Thread runThread;
     private final HttpClient kairosDb;
     private final static Logger log = LoggerFactory.getLogger(KairosIndexedDBListener.class);
     private final MetricRegistry registry;
@@ -177,7 +176,7 @@ public class KairosIndexedDBListener implements EventListener, Runnable {
             finally {
                 dispatchList.clear();
             }
-        } while(true);
+        } while(!stopRequested);
     }
 
     // move events from the MetricBuffer to the dispatchList, will exist if over 1000 second of processing

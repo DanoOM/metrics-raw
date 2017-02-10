@@ -12,4 +12,6 @@ public interface EventListener {
      * @return The number of events currently buffered.
      * */
     public int eventsBuffered();
+    
+    public void stop();
 }
