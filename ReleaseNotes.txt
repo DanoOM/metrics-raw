@@ -1,3 +1,6 @@
+0.0.10
+* Removed Legacy kairosDBListener, (replaced with indexed Implementation).
+* Update Metric Registry/Listeners, (Users can now remove listeners, and stop listeners if they are threaded).
 0.0.7
 * Added KairosIndexedDBListener - handles data collisions within millisecond, by 'indexing' the event.
 * Removed EventType - was never used
