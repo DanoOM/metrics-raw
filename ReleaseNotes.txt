@@ -1,3 +1,5 @@
+.0.0.11
+* Bug Fix: kairosDbListener - thread leak on thread
 0.0.10
 * Removed Legacy kairosDBListener, (replaced with indexed Implementation).
 * Update Metric Registry/Listeners, (Users can now remove listeners, and stop listeners if they are threaded).
