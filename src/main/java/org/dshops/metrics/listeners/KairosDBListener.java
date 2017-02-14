@@ -47,7 +47,6 @@ public class KairosDBListener extends ThreadedListener implements Runnable {
     private final ConcurrentSkipListMap<Long,MetricTimeSlot> metricBuffer = new ConcurrentSkipListMap<>(); // time/
     private final int batchSize;
     private final long offerTime;   // amount of time we are willing to 'block' before adding an event to our buffer, prior to dropping it.
-    private Thread runThread;
     private final HttpClient kairosDb;
     private final static Logger log = LoggerFactory.getLogger(KairosDBListener.class);
     private final MetricRegistry registry;
@@ -176,6 +175,17 @@ public class KairosDBListener extends ThreadedListener implements Runnable {
             }
         } while(!stopRequested);
     }
+    
+    @Override
+    public void stop() {
+        super.stop();
+        if(kairosDb != null) {
+            try {
+                kairosDb.shutdown();
+            }
+            catch (Exception e) {}
+        }
+    }
 
     // move events from the MetricBuffer to the dispatchList, will exist if over 1000 second of processing
     // or we have exceeded batchSize.
@@ -205,7 +215,7 @@ public class KairosDBListener extends ThreadedListener implements Runnable {
             else {
                 Thread.sleep(50);
             }
-        } while(true);
+        } while(!stopRequested);
     }
 
 
