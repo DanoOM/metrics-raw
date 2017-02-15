@@ -1,27 +1,24 @@
-package org.dshops.metrics.generators;
+package org.dshops.test.generators;
 
+import org.dshops.metrics.EventListener;
 import org.dshops.metrics.JvmMetrics;
 import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.listeners.ConsoleListener;
-import org.dshops.metrics.listeners.KairosDBListener;
 
+/**
+ * Generate metrics based on the JvmMetrics Package provided with Metrics-RAW
+ * */
+abstract public class JvmMetricsGenerator implements DynamicListener {
 
-public class JvmMetricsTest {
-
-    public static void main(String args[]) {
-        new JvmMetricsTest().testJvmMetrics();
+    @Override
+    public EventListener getListener(MetricRegistry reg) {
+        return new ConsoleListener(System.out);
     }
 
     public void testJvmMetrics() {
         MetricRegistry reg = getRegistry();
-        reg.addEventListener(new KairosDBListener("http://wdc-tst-masapp-002:8080",
-                                                  "root",
-                                                  "root",
-                                                  reg,
-                                                  100));
-
+        reg.addEventListener(getListener(reg));
         reg.addEventListener(new ConsoleListener(System.out));
-
         JvmMetrics.addMetrics(reg, 4);
         while(true) {
             pause(1000);

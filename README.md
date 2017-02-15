@@ -56,7 +56,7 @@ At this point we only have 2 Listeners implemented
 1. ConsoleListener - Simply logs the event to the console.
 2. KairosListener - sends events to a KairosDB.
 
-## KairosDBListener
+## KairosDBListener -- WARNING: MOVED TO NEW github project (metrics-raw-kairosdb)
 Users should not need to interact with the KairosDBListener, except during it construction, the following 3 constructors are provided.
 
 1. KairosDBListener(String conectString, String un, String pd, MetricRegistry registry)

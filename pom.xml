@@ -8,7 +8,7 @@
 	</prerequisites>
 	<groupId>org.dshops</groupId>
 	<artifactId>metrics-raw</artifactId>
-	<version>0.0.11</version>
+	<version>0.1.0</version>
 	<packaging>jar</packaging>
 	<name>Metrics-Raw</name>
 	<description>
@@ -59,12 +59,7 @@
 		</repository>
 	</distributionManagement>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.kairosdb</groupId>
-			<artifactId>client</artifactId>
-			<version>2.1.0</version>
-		</dependency>
+	<dependencies>		
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

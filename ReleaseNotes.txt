@@ -1,4 +1,7 @@
-.0.0.11
+0.1.0
+* kairosDBListener has been removed, as well as all dependencies on kairosdb. (moved to new github project: metrics-raw-kairosdb).
+* added test back in, (some tests still need to be migrated back into the glue).
+0.0.11
 * Bug Fix: kairosDbListener - thread leak on thread
 0.0.10
 * Removed Legacy kairosDBListener, (replaced with indexed Implementation).
