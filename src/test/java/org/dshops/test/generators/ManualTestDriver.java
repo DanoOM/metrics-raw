@@ -7,9 +7,8 @@ import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.Timer;
 import org.dshops.metrics.listeners.ConsoleListener;
 
-public class ManualTestDriver implements DynamicListener {
+public class ManualTestDriver {
 
-    @Override
     public EventListener getListener(MetricRegistry reg) {
         return new ConsoleListener(System.out);
     }

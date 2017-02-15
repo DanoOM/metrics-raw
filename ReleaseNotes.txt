@@ -1,3 +1,5 @@
+0.1.1
+* some test clean up.
 0.1.0
 * kairosDBListener has been removed, as well as all dependencies on kairosdb. (moved to new github project: metrics-raw-kairosdb).
 * added test back in, (some tests still need to be migrated back into the glue).

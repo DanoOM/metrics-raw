@@ -8,9 +8,8 @@ import org.dshops.metrics.listeners.ConsoleListener;
 /**
  * Generate metrics based on the JvmMetrics Package provided with Metrics-RAW
  * */
-abstract public class JvmMetricsGenerator implements DynamicListener {
+abstract public class JvmMetricsGenerator {
 
-    @Override
     public EventListener getListener(MetricRegistry reg) {
         return new ConsoleListener(System.out);
     }
