@@ -37,6 +37,10 @@ Events will be dispatched to any EventListener.  An Event will be triggered when
 Gauges are always scheduled, the users must implement getValue(), which returns either a Long, or a Double.  This is a functional interface.  Optionally users can elect to implement Map<String,String> getTags() if the gauge needs any tags associated with it.
 Scheduling the 'same' gauge more then once, is not allowed, and the method will be behave idempotently.
 
+## Meter
+Meters are always schedule, and represent the 'rate of events' over time.  If you system generates very high tps rates, this can lead to data storage/throughput issues, using a meter (scheduled at 1second), can reduce storage/increase throughput for your metrics-system.
+
+
 ## Timer
 Timers are automatically started when constructed.  calling stop on the timer will calculate the duration of time since startTime, any registered EventListeners will be updated.
 Timers when stopped can optionally accept additional tags.

@@ -16,6 +16,7 @@ public class MetricRegistry {
     private final Map<String,String> tags;
     private final Map<MetricKey, Counter> counters = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
+    private final Map<MetricKey, Gauge> meters = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10, new DaemonThreadFactory());
     // registries stored by prefix
@@ -233,6 +234,25 @@ public class MetricRegistry {
                 }
             }
         }
+    }
+
+    public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
+        MetricKey key = new MetricKey(name, Util.buildTags(tags));
+        Gauge meter = meters.get(key);
+        if (meter == null) {
+            synchronized (meters) {
+                meter = meters.get(key);
+                if (meter == null) {
+                    meter = new MeterImpl();
+                    meters.put(key,meter);
+                    pools.scheduleWithFixedDelay(new GaugeRunner(key, meter, this),
+                                                 0,
+                                                 intervalInSeconds,
+                                                 TimeUnit.SECONDS);
+                }
+            }
+        }
+        return (Meter)meter;
     }
 
 

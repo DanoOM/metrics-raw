@@ -3,6 +3,7 @@ package org.dshops.test.generators;
 import java.util.Random;
 
 import org.dshops.metrics.EventListener;
+import org.dshops.metrics.MeterImpl;
 import org.dshops.metrics.MetricRegistry;
 import org.dshops.metrics.Timer;
 import org.dshops.metrics.listeners.ConsoleListener;
@@ -55,10 +56,14 @@ public class ManualTestDriver {
             return r.nextInt(100) + 400;
         }, "tag", "tagValue");
 
+        MeterImpl rg = new MeterImpl();
+        mr.scheduleGauge("testRateGauge", 1, rg,"","");
+
         // counter test
         for (int i = 0; i < 30_000; i++) {
             try {
                 Thread.sleep(r.nextInt(5));
+                rg.mark();
             } catch (Exception e) {
             }
             mr.counter("testCounter").increment();

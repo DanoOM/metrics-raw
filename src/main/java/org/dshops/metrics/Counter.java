@@ -25,7 +25,7 @@ public class Counter extends MetricBase {
         registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
 
-    public void add(long x){
+    public void add(long x) {
         adder.add(x);
         registry.postEvent(name, System.currentTimeMillis(), adder.longValue()); // This 'may not be exact'
     }
