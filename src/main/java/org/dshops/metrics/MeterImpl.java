@@ -2,8 +2,8 @@ package org.dshops.metrics;
 
 import java.util.concurrent.atomic.LongAdder;
 
-/** A Gauage that can be scheduled, backed by a counter.
- * the counter will be re-created once the gauage reports its results.
+/** A Gauge that can be scheduled, backed by a counter.
+ * the counter will be re-created once the gauge reports its results.
  *
  * */
 public class MeterImpl implements Gauge<Number>, Meter {
@@ -15,9 +15,9 @@ public class MeterImpl implements Gauge<Number>, Meter {
 
     @Override
     public Number getValue() {
-        Number result = adder.intValue();
+        LongAdder tmp = adder;
         adder = new LongAdder();
-        return result;
+        return tmp.intValue();
     }
 
     /** mark represents the occurs of an event. */
