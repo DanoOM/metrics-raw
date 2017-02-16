@@ -1,5 +1,6 @@
-0.1.1
+0.2.0
 * some test clean up.
+* Added Meter, updated MetricRepository to support meter scheduling.
 0.1.0
 * kairosDBListener has been removed, as well as all dependencies on kairosdb. (moved to new github project: metrics-raw-kairosdb).
 * added test back in, (some tests still need to be migrated back into the glue).
