@@ -62,20 +62,4 @@ public class Timer extends MetricBase {
     	                   duration);
     	return duration;
     }
-
-    public static class Builder {
-    	private Timer timer;
-        Builder(String name, MetricRegistry registry, boolean useStartTimeAsEventTime) {
-            this.timer = new Timer(name, registry, new HashMap<>(), useStartTimeAsEventTime);
-        }
-
-        public Builder addTag(String name, String value) {
-            timer.tags.put(name,value);
-            return this;
-        }
-
-        public Timer build() {
-        	return timer.start();
-        }
-    }
 }

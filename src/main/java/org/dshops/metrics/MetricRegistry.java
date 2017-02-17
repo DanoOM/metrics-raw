@@ -100,10 +100,6 @@ public class MetricRegistry {
     	return new Timer(name, this, useStartTimeAsEventTime).start();
     }
 
-    public Timer.Builder timerWithTags(String name) {
-    	return new Timer.Builder(name, this,useStartTimeAsEventTime);
-    }
-
     public Timer timer(String name, String...tags) {
     	return timer(name, Util.buildTags(tags));
     }
@@ -152,14 +148,6 @@ public class MetricRegistry {
             }
         }
         return c;
-    }
-
-    /** Counters not recommended for real use, but may be
-     * useful for testing/early integration.
-     * Counters with tags are extra expensive. */
-    public Counter.Builder counterWithTags(String name) {
-        Counter.Builder cb = new Counter.Builder(name, this);
-        return cb;
     }
 
     public void event(String name) {
@@ -211,10 +199,6 @@ public class MetricRegistry {
             ctags.putAll(customTags);
         }
         dispatchEvent(new DoubleEvent(prefix + name, tags, System.currentTimeMillis(),value));
-    }
-
-    public EventImpl.Builder eventWithTags(String name) {
-        return new EventImpl.Builder(name, this);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {

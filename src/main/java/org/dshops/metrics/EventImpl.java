@@ -1,7 +1,6 @@
 package org.dshops.metrics;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 public abstract class EventImpl implements Event {
@@ -44,25 +43,6 @@ public abstract class EventImpl implements Event {
     @Override
     public String getName() {
         return name;
-    }
-
-    public static class Builder {
-        private MetricRegistry registry;
-        EventImpl event;
-
-        public Builder(String name, MetricRegistry registry) {
-            this.registry = registry;
-            this.event = new LongEvent(registry.getPrefix() + name, new HashMap<String,String>(),  System.currentTimeMillis(),1l);
-        }
-
-        public Builder addTag(String tag, String value) {
-            this.event.tags.put(tag, value);
-            return this;
-        }
-
-        public void build() {
-            this.registry.dispatchEvent(this.event);
-        }
     }
 
     @Override
