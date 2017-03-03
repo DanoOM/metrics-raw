@@ -26,6 +26,7 @@ public class MetricRegistry {
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
         private final String prefix;
+        private boolean startTimeStrategy = false;
 
         /** @param serviceTeam - application Domain (service team)
          *  @param application  - application name
@@ -45,14 +46,17 @@ public class MetricRegistry {
         	if (serviceTeam.contains(".") || application.contains(".") || applicationType.contains("."))
         		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot contain the character '.'");
 
-        	prefix = serviceTeam + "." + application + "." + applicationType + ".";
-            tags.put("host", hostTag);
-            tags.put("datacenter", datacenterTag);
+        	String tmp  = serviceTeam + "." + application + "." + applicationType + ".";
+
+        	// ensure consistent case here.
+        	prefix = tmp.toLowerCase();
+            tags.put("host", hostTag.toLowerCase());
+            tags.put("datacenter", datacenterTag.toLowerCase());
         }
 
         // default is false
-        public Builder withTimerStrategy(boolean useStartTimeAsEventTime) {
-            useStartTimeAsEventTime = useStartTimeAsEventTime;
+        public Builder withTimerStrategy(boolean u) {
+            startTimeStrategy = u;
             return this;
         }
 
@@ -62,22 +66,33 @@ public class MetricRegistry {
         }
 
         public MetricRegistry build() {
-            if (tags.size() > 0) {
-                return new MetricRegistry(prefix, tags);
+            MetricRegistry mr = registries.get(prefix);
+            if (mr == null) {
+                synchronized (registries) {
+                    mr = registries.get(prefix);
+                    if (mr == null) {
+                        if (tags.size() > 0)
+                            mr = new MetricRegistry(prefix, startTimeStrategy, tags);
+                        else
+                            mr = new MetricRegistry(prefix, startTimeStrategy);
+                    }
+                }
             }
-            return new MetricRegistry(prefix);
+            return mr;
         }
     }
 
-    MetricRegistry(String prefix, Map<String,String> tags) {
+    MetricRegistry(String prefix, boolean startTimeStrategy, Map<String,String> tags) {
     	this.prefix = prefix;
         this.tags = tags;
-        registries.put(prefix, this);
+        registries.put(prefix.substring(prefix.length() - 1) , this);
+        useStartTimeAsEventTime = startTimeStrategy;
     }
 
-    MetricRegistry(String prefix) {
+    MetricRegistry(String prefix, boolean startTimeStrategy) {
     	this.prefix = prefix;
         this.tags = null;
+        useStartTimeAsEventTime = startTimeStrategy;
         registries.put(prefix, this);
     }
 

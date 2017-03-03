@@ -1,3 +1,7 @@
+0.3.0
+* fixed getRegistry() such that a 'trailing' '.' need to be passed in (since this is an internal artifact).
+* serviceTeam,appName,appType, host, datacenter values are now all lowercased to improved consistency.
+* Duplicate registries that are created (those with the same prefix, will be re-used rather then creating a new instance).
 0.2.1
 * Bug Fix: MeterImpl, could lose some 'mark' calls under high concurrency at the time of reporting.
 0.2.0
