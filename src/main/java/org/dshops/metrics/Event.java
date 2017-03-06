@@ -11,7 +11,6 @@ public interface Event {
     public MetricKey getHash();
 
     // 'can be used' by listener if 'sub-indexing is needed'
-    // not will not work if 2 listeners are 'changing this..'
+    // Requires an EventIndexingListener be registered
     public int getIndex();
-    public void setIndex(int index);
 }
