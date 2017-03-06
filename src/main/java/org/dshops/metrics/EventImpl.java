@@ -53,4 +53,14 @@ public abstract class EventImpl implements Event {
         return metricKey;
     }
 
+    int index;
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index){
+        this.index = index;
+    }
+
 }

@@ -9,4 +9,9 @@ public interface Event {
     default public long getLongValue(){ return 1; }
     default public double getDoubleValue(){ return 0;}
     public MetricKey getHash();
+
+    // 'can be used' by listener if 'sub-indexing is needed'
+    // not will not work if 2 listeners are 'changing this..'
+    public int getIndex();
+    public void setIndex(int index);
 }
