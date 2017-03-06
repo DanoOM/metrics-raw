@@ -22,6 +22,7 @@ public class MetricRegistry {
     // registries stored by prefix
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
     private boolean useStartTimeAsEventTime = false;
+    private boolean enableMilliIndexing = false;
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
@@ -259,6 +260,9 @@ public class MetricRegistry {
         if (!listeners.contains(listener)) {
             synchronized (listeners) {
                 if (!listeners.contains(listener)) {
+                    if (listener instanceof EventIndexingListener){
+                        enableMilliIndexing = true;
+                    }
                     listeners.add(listener);
                 }
             }
@@ -311,8 +315,31 @@ public class MetricRegistry {
         dispatchEvent(e);
     }
 
-    void dispatchEvent(Event e) {
+    private Map<MetricKey,ResetCounter> counts = new ConcurrentHashMap<>();
+    void dispatchEvent(EventImpl e) {
+        if (enableMilliIndexing) {
+            handleIndexing(e);
+        }
         listeners.stream().forEach( l -> l.onEvent(e));
+    }
+
+    private void handleIndexing(EventImpl e) {
+        ResetCounter counter = counts.get(e.getHash());
+        if (counter == null) {
+            synchronized (counts) {
+                counter = counts.get(e.getHash());
+                if (counter == null) {
+                    counter = new ResetCounter();
+                    counts.put(e.getHash(),counter);
+                }
+            }
+        }
+        try {
+            e.setIndex(counter.incrementAndGet());
+        }
+        catch(Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     Map<MetricKey, Counter> getCounters() {
@@ -333,3 +360,19 @@ class DaemonThreadFactory implements ThreadFactory {
     }
 }
 
+
+// used to 'sub-index' on milli
+class ResetCounter {
+    public AtomicInteger counter = new AtomicInteger();
+    public long ts;
+    public int incrementAndGet() {
+        int count = counter.incrementAndGet();
+        if (System.currentTimeMillis() - ts  > 1) {
+            synchronized (this) {
+                ts = System.currentTimeMillis();
+                counter.set(0);
+            }
+        }
+        return count;
+    }
+}
