@@ -103,7 +103,7 @@ public class MetricRegistry {
     }
 
     /** By Default registries created with the same signature will be re-used,
-     * this can be disabled (typcially done for testing).
+     * this can be disabled (typically done for testing).
      * Changing this value after a registry is created as know effect.
      * */
     public static void enableRegistryCaching(boolean enableRegistryCaching) {
