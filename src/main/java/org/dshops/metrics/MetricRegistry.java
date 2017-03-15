@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MetricRegistry {
 	private final String prefix;
-    private final Map<String,String> tags;
+    private final Map<String,String> registryTags;
     private final Map<MetricKey, Counter> counters = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> meters = new ConcurrentHashMap<>();
@@ -23,6 +23,7 @@ public class MetricRegistry {
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
     private boolean useStartTimeAsEventTime = false;
     private boolean enableMilliIndexing = false;
+    private static boolean enableRegistryCache = true;
 
     public static class Builder {
         private Map<String,String> tags = new HashMap<>();
@@ -85,20 +86,32 @@ public class MetricRegistry {
 
     MetricRegistry(String prefix, boolean startTimeStrategy, Map<String,String> tags) {
     	this.prefix = prefix;
-        this.tags = tags;
-        registries.put(prefix.substring(prefix.length() - 1) , this);
+        this.registryTags = tags;
+        if (enableRegistryCache) {
+            registries.put(prefix.substring(prefix.length() - 1) , this);
+        }
         useStartTimeAsEventTime = startTimeStrategy;
     }
 
     MetricRegistry(String prefix, boolean startTimeStrategy) {
     	this.prefix = prefix;
-        this.tags = null;
+        this.registryTags = null;
         useStartTimeAsEventTime = startTimeStrategy;
-        registries.put(prefix, this);
+        if (enableRegistryCache) {
+            registries.put(prefix.substring(prefix.length() - 1) , this);
+        }
     }
 
-    public String getPrefix() {
-    	return prefix;
+    /** By Default registries created with the same signature will be re-used,
+     * this can be disabled (typcially done for testing).
+     * Changing this value after a registry is created as know effect.
+     * */
+    public static void enableRegistryCaching(boolean enableRegistryCaching) {
+        enableRegistryCache = enableRegistryCaching;
+    }
+
+    public static boolean isRegistryCachingEnabled() {
+        return enableRegistryCache;
     }
 
     /** Returns a previously created registry, where prefix = serviceTeam.application.appType
@@ -108,8 +121,12 @@ public class MetricRegistry {
         return registries.get(prefix);
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
     public Map<String,String> getTags() {
-        return Collections.unmodifiableMap(tags);
+        return Collections.unmodifiableMap(registryTags);
     }
 
     public Timer timer(String name) {
@@ -166,16 +183,67 @@ public class MetricRegistry {
         return c;
     }
 
+    /** Generates an alert, where the metricName is:
+     *     ServiceTeam.app.type.alerts
+     *     tag will contain a tag, called alertName, with the alertName passed here.s
+     * */
+    public void alert(String alertName) {
+        alert(alertName, 1, Collections.EMPTY_MAP);
+    }
+    public void alert(String alertName, String...customTags) {
+        alert(alertName, 1, Collections.EMPTY_MAP);
+    }
+
+    public void alert(String alertName, long value) {
+        alert(alertName, value, Collections.EMPTY_MAP);
+    }
+
+    public void alert(String alertName, long value, String...customTags) {
+        alert(alertName, value, Util.buildTags(customTags));
+    }
+
+    public void alert(String alertName, long value, Map<String,String> customTags) {
+        Map<String, String> ctags = mergeTags(customTags);
+        ctags.put("alertName", alertName);
+        dispatchEvent(new LongEvent(prefix + "alerts", ctags, System.currentTimeMillis(), value));
+    }
+
+    public void alert(String alertName, double value) {
+        alert(alertName, value, Collections.EMPTY_MAP);
+    }
+
+    public void alert(String alertName, double value, String...customTags) {
+        alert(alertName, value, Util.buildTags(customTags));
+    }
+
+    public void alert(String alertName, double value, Map<String,String> customTags) {
+        Map<String, String> ctags = mergeTags(customTags);
+        ctags.put("alertName", alertName);
+        dispatchEvent(new DoubleEvent(prefix + "alerts", ctags, System.currentTimeMillis(), value));
+    }
+
+    /** Returns a map with the customTags + registryTags merged (customTags collisions always win).*/
+    private Map<String, String> mergeTags(Map<String, String> customTags) {
+        Map<String,String> ctags = new HashMap<>();
+        if (registryTags!=null) {
+            ctags.putAll(registryTags);
+        }
+        if (customTags !=null){
+            ctags.putAll(customTags);
+        }
+        return ctags;
+    }
+
     public void event(String name) {
         event(name,1);
     }
 
     public void event(String name, long value) {
-        dispatchEvent(new LongEvent(prefix + name, tags,  System.currentTimeMillis(),value));
+        event(name,value,Collections.EMPTY_MAP);
     }
 
     public void event(String name, double value) {
-        dispatchEvent(new DoubleEvent(prefix + name, tags,  System.currentTimeMillis(),value));
+        event(name,value,Collections.EMPTY_MAP);
     }
 
     public void event(String name, String...customTags) {
@@ -183,10 +251,10 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value, String...customTags) {
-        dispatchEvent(new LongEvent(prefix + name, Util.buildTags(customTags),  System.currentTimeMillis(),value));
+        event(name,value,Util.buildTags(customTags));
     }
     public void event(String name, double value, String...customTags) {
-        dispatchEvent(new DoubleEvent(prefix + name, Util.buildTags(customTags),  System.currentTimeMillis(),value));
+        event(name,value,Util.buildTags(customTags));
     }
 
     public void event(String name, Map<String,String> customTags) {
@@ -194,27 +262,13 @@ public class MetricRegistry {
     }
 
     public void event(String name, long value, Map<String,String> customTags) {
-        Map<String,String> ctags = new HashMap<>();
-
-        if (tags != null) {
-            ctags.putAll(tags);
-        }
-        if (customTags != null) {
-            ctags.putAll(customTags);
-        }
-        dispatchEvent(new LongEvent(prefix + name, tags, System.currentTimeMillis(),value));
+        Map<String, String> ctags = mergeTags(customTags);
+        dispatchEvent(new LongEvent(prefix + name, ctags, System.currentTimeMillis(),value));
     }
 
     public void event(String name, double value, Map<String,String> customTags) {
-        Map<String,String> ctags = new HashMap<>();
-
-        if (tags != null) {
-            ctags.putAll(tags);
-        }
-        if (customTags != null) {
-            ctags.putAll(customTags);
-        }
-        dispatchEvent(new DoubleEvent(prefix + name, tags, System.currentTimeMillis(),value));
+        Map<String, String> ctags = mergeTags(customTags);
+        dispatchEvent(new DoubleEvent(prefix + name, ctags, System.currentTimeMillis(),value));
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -287,14 +341,7 @@ public class MetricRegistry {
 
     void postEvent(String name, long ts, Map<String,String> customTags, Number number) {
         EventImpl e;
-        Map<String,String> ctags = new HashMap<>();
-
-        if (tags != null) {
-            ctags.putAll(tags);
-        }
-        if (customTags != null) {
-        	ctags.putAll(customTags);
-        }
+        Map<String, String> ctags = mergeTags(customTags);
 
         if (number instanceof Double) {
             e = new DoubleEvent(prefix + name, ctags, ts, number.doubleValue());
@@ -306,12 +353,12 @@ public class MetricRegistry {
     }
 
     void postEvent(String name, long ts, long value) {
-        EventImpl e = new LongEvent(prefix + name, tags, ts, value);
+        EventImpl e = new LongEvent(prefix + name, registryTags, ts, value);
         dispatchEvent(e);
     }
 
     void postEvent(String name, long ts, double value) {
-        EventImpl e = new DoubleEvent(prefix + name, tags, ts, value);
+        EventImpl e = new DoubleEvent(prefix + name, registryTags, ts, value);
         dispatchEvent(e);
     }
 
