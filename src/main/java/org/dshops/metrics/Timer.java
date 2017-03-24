@@ -27,10 +27,19 @@ public class Timer extends MetricBase {
     /** calculates the time from the starttime, also triggers an event for Listeners */
     public long stop() {
     	long duration = System.currentTimeMillis() - startTime;
-    	registry.postEvent(name,
+    	if (registry instanceof BucketMetricRegistry){
+    	    ((BucketMetricRegistry)registry).postEvent(name,
+                                       useStartTimeAsEventTime ? startTime : startTime+duration,
+                                       this.tags,
+                                       duration,
+                                       "TIMER");
+    	}
+    	else {
+    	    registry.postEvent(name,
     	                   useStartTimeAsEventTime ? startTime : startTime+duration,
     	                   tags,
     	                   duration);
+    	}
     	return duration;
     }
 
@@ -56,10 +65,20 @@ public class Timer extends MetricBase {
     	    this.tags = new HashMap<>();
     	}
     	this.tags.putAll(customTags);
-    	registry.postEvent(name,
-    	                   useStartTimeAsEventTime ? startTime : startTime+duration,
-    	                   this.tags,
-    	                   duration);
+
+    	if (registry instanceof BucketMetricRegistry){
+    	    ((BucketMetricRegistry)registry).postEvent(name,
+                                        useStartTimeAsEventTime ? startTime : startTime+duration,
+                                        this.tags,
+                                        duration,
+                                        "TIMER");
+    	}
+    	else {
+        	registry.postEvent(name,
+        	                   useStartTimeAsEventTime ? startTime : startTime+duration,
+        	                   this.tags,
+        	                   duration);
+    	}
     	return duration;
     }
 }
