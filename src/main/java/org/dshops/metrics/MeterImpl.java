@@ -25,4 +25,9 @@ public class MeterImpl implements Gauge<Number>, Meter {
     public void mark() {
         adder.increment();
     }
+
+    @Override
+    public void mark(int incrementBy) {
+        adder.add(incrementBy);
+    }
 }
