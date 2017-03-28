@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -130,7 +129,7 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name) {
-    	return new Timer(name, this, useStartTimeAsEventTime).start();
+    	return new Timer(name +".timer", this, useStartTimeAsEventTime).start();
     }
 
     public Timer timer(String name, String...tags) {
@@ -138,17 +137,14 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name, Map<String,String> tags) {
-    	return new Timer(name, this, tags, useStartTimeAsEventTime).start();
+    	return new Timer(name+".timer", this, tags, useStartTimeAsEventTime).start();
     }
 
-    // construct a timer, but aggregate time values into buckets of size bucketTimeSeconds
-    public Timer timer(String name, int bucketTimeSeconds, String...tags) {
-        return timer(name, Util.buildTags(tags));
-    }
 
     /** Counters not recommended for real use, but may be
      * useful for testing/early integration. */
     public Counter counter(String name) {
+        name = name+".counter";
         Counter c = getCounters().get(new MetricKey(name));
         if (c == null){
             synchronized (getCounters()) {
@@ -167,7 +163,8 @@ public class MetricRegistry {
     	return counter(name, Util.buildTags(tags));
     }
 
-    public Counter counter(String name, Map<String,String> tags){
+    public Counter counter(String name, Map<String,String> tags) {
+        name = name+".counter";
     	MetricKey key = new MetricKey(name,tags);
     	Counter c = getCounters().get(key);
         if (c == null){
@@ -222,18 +219,6 @@ public class MetricRegistry {
         dispatchEvent(new DoubleEvent(prefix + "alerts", ctags, System.currentTimeMillis(), value));
     }
 
-    /** Returns a map with the customTags + registryTags merged (customTags collisions always win).*/
-    private Map<String, String> mergeTags(Map<String, String> customTags) {
-        Map<String,String> ctags = new HashMap<>();
-        if (registryTags!=null) {
-            ctags.putAll(registryTags);
-        }
-        if (customTags !=null){
-            ctags.putAll(customTags);
-        }
-        return ctags;
-    }
-
     public void event(String name) {
         event(name,1);
     }
@@ -263,12 +248,12 @@ public class MetricRegistry {
 
     public void event(String name, long value, Map<String,String> customTags) {
         Map<String, String> ctags = mergeTags(customTags);
-        dispatchEvent(new LongEvent(prefix + name, ctags, System.currentTimeMillis(),value));
+        dispatchEvent(new LongEvent(prefix + name + ".event", ctags, System.currentTimeMillis(),value));
     }
 
     public void event(String name, double value, Map<String,String> customTags) {
         Map<String, String> ctags = mergeTags(customTags);
-        dispatchEvent(new DoubleEvent(prefix + name, ctags, System.currentTimeMillis(),value));
+        dispatchEvent(new DoubleEvent(prefix + name + ".event", ctags, System.currentTimeMillis(),value));
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -276,6 +261,7 @@ public class MetricRegistry {
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, Map<String,String> tags) {
+        name = name + ".gauge";
         MetricKey key = new MetricKey(name, tags);
         if (!gauges.containsKey(key)) {
             synchronized (gauge) {
@@ -291,6 +277,7 @@ public class MetricRegistry {
     }
 
     public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
+        name = name + ".meter";
         MetricKey key = new MetricKey(name, Util.buildTags(tags));
         Gauge meter = meters.get(key);
         if (meter == null) {
@@ -309,6 +296,18 @@ public class MetricRegistry {
         return (Meter)meter;
     }
 
+
+    /** Returns a map with the customTags + registryTags merged (customTags collisions always win).*/
+    private Map<String, String> mergeTags(Map<String, String> customTags) {
+        Map<String,String> ctags = new HashMap<>();
+        if (registryTags!=null) {
+            ctags.putAll(registryTags);
+        }
+        if (customTags !=null){
+            ctags.putAll(customTags);
+        }
+        return ctags;
+    }
 
     public void addEventListener(EventListener listener) {
         if (!listeners.contains(listener)) {
@@ -393,20 +392,6 @@ public class MetricRegistry {
         return counters;
     }
 }
-
-
-
-class DaemonThreadFactory implements ThreadFactory {
-    private final AtomicInteger counter = new AtomicInteger();
-    @Override
-    public Thread newThread(Runnable r) {
-        Thread t = new Thread(r);
-        t.setName("metric-raw-" + (counter.incrementAndGet()));
-        t.setDaemon(true);
-        return t;
-    }
-}
-
 
 // used to 'sub-index' on milli
 class ResetCounter {
