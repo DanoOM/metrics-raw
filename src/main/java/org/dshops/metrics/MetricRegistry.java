@@ -29,25 +29,27 @@ public class MetricRegistry {
         private final String prefix;
         private boolean startTimeStrategy = false;
 
-        /** @param serviceTeam - application Domain (service team)
-         *  @param application  - application name
+        /** @param namespace - Namespace
+         *  @param application  - Application name
          *  @param applicationType - The type of application/library - aka, server, client, test, etc.
          *  @param hostTag - The hostTag these metrics should be associated with
-         *  @param datacenterTag = The datacenter tag these metrics should be associated with.
-         *  A prefix for each metric will be generated, serviceTeam.Aapplication.
+         *  @param datacenterTag - The datacenter tag these metrics should be associated with.
+         *  A prefix for each metric will be generated using:
+         *
+         *     namespace.Application.applicationType
          *
          *  */
-        public Builder(String serviceTeam,
+        public Builder(String namespace,
                        String application,
                        String applicationType,
                        String hostTag,
                        String datacenterTag) {
-        	if (serviceTeam == null || application == null || applicationType == null)
+        	if (namespace == null || application == null || applicationType == null)
         		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot be null");
-        	if (serviceTeam.contains(".") || application.contains(".") || applicationType.contains("."))
+        	if (namespace.contains(".") || application.contains(".") || applicationType.contains("."))
         		throw new IllegalArgumentException("serviceTeam, application, and/or applicationType cannot contain the character '.'");
 
-        	String tmp  = serviceTeam + "." + application + "." + applicationType + ".";
+        	String tmp  = namespace + "." + application + "." + applicationType + ".";
 
         	// ensure consistent case here.
         	prefix = tmp.toLowerCase();
