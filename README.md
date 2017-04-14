@@ -79,7 +79,7 @@ The kairosdb listener will upload 4 statistics to kairos at 1 minute intervals
 4. metrisraw.stats.http.count - The actual number of http requests to upload metrics.
 The 4 metrics will be tagged, with the following tags:
 host
-serviceTeam
+namespace
 application
 appType
 

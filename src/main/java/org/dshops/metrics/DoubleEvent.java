@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class DoubleEvent extends EventImpl {
     double value;
-    DoubleEvent(final String name, final Map<String,String> tags, final long time, double value) {
+    public DoubleEvent(final String name, final Map<String,String> tags, final long time, double value) {
         super(name,tags,time);
         this.value = value;
     }

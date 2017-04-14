@@ -1,3 +1,6 @@
+0.4.4
+* minor Updates - made Long/DoubleEvents constructors public.
+* changed 'serviceTeam' to namespace.
 0.3.0
 * fixed getRegistry() such that a 'trailing' '.' need to be passed in (since this is an internal artifact).
 * serviceTeam,appName,appType, host, datacenter values are now all lowercased to improved consistency.
