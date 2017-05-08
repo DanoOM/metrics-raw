@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PercentileTimer extends MetricBase {
+public class PercentileTimer extends MetricBase implements Timer {
 	protected Long startTime;
 	private static Map<MetricKey,PercentileInfo> percentilesInfos = new ConcurrentHashMap<>();
 	private static int[] percentilesToReport = {90,99};
@@ -38,17 +38,37 @@ public class PercentileTimer extends MetricBase {
     }
 
     /** Returns a new timer, with startTime = now */
-    PercentileTimer start() {
+    Timer start() {
     	startTime = System.currentTimeMillis();
     	return this;
     }
 
     /** calculates the time from the start time, also triggers an event for Listeners */
-    public long stop() {
-    	long duration = System.currentTimeMillis() - startTime;
-    	collectData(duration);
-    	return duration;
+    public long stop() {    	
+    	return stop(System.currentTimeMillis() - startTime);
     }
+    
+    private long stop(long duration) {
+        collectData(duration);
+        return duration;
+    }
+    
+    /** calculates the time from the startTime, and adds the provided tags,
+     * also triggers an event for Listeners */
+    public long stop(String... tags) {
+        return stop(Util.buildTags(tags));
+    }
+    
+    /** todo This should error out, or 'not' update the duration on an already stopped timer. */
+    public long stop(Map<String,String> customTags) {
+        long duration = System.currentTimeMillis() - startTime;
+        if (this.tags == null) {
+            this.tags = new HashMap<>();
+        }
+        this.tags.putAll(customTags);
+        return stop(duration);
+    }
+    
 
     private void collectData(long duration) {
         MetricKey key = new MetricKey(name, tags);

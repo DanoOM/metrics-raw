@@ -32,10 +32,10 @@ public class PercentileInfo {
         synchronized (this) {
             values[valuesCollected] = (int)duration;
             valuesCollected++;
-            if (valuesCollected == values.length) {
+            if (valuesCollected >= values.length) {                
                 int[] tmp = values;
                 values = new int[values.length];
-                valuesCollected = 0;
+                valuesCollected = 0;                
                 threadPool.submit(() -> reportPercentiles(tmp));
             }
         }

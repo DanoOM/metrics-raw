@@ -58,14 +58,18 @@ public class ManualTestDriver {
 
         MeterImpl rg = new MeterImpl();
         mr.scheduleGauge("testRateGauge", 1, rg,"","");
+        
+        
+        
 
         // counter test
         for (int i = 0; i < 30_000; i++) {
             try {
+                Timer pt = mr.percentileTimer("testPercentileTimer");
                 Thread.sleep(r.nextInt(5));
+                pt.stop();
                 rg.mark();
-            } catch (Exception e) {
-            }
+            } catch (Exception e) {}
             mr.counter("testCounter").increment();
         }
         System.out.println("Exiting");

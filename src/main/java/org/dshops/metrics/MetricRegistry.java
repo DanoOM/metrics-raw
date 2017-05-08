@@ -134,7 +134,7 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name) {
-    	return new Timer(name +".timer", this, useStartTimeAsEventTime).start();
+    	return new RawTimer(name +".timer", this, useStartTimeAsEventTime).start();
     }
 
     public Timer timer(String name, String...tags) {
@@ -142,18 +142,18 @@ public class MetricRegistry {
     }
 
     public Timer timer(String name, Map<String,String> tags) {
-    	return new Timer(name+".timer", this, tags, useStartTimeAsEventTime).start();
+    	return new RawTimer(name+".timer", this, tags, useStartTimeAsEventTime).start();
     }
 
-    public PercentileTimer percentileTimer(String name) {
+    public Timer percentileTimer(String name) {
         return new PercentileTimer(name +".timer", this).start();
     }
 
-    public PercentileTimer percetileTimer(String name, String...tags) {
+    public Timer percentileTimer(String name, String...tags) {
         return percentileTimer(name, Util.buildTags(tags));
     }
 
-    public PercentileTimer percentileTimer(String name, Map<String,String> tags) {
+    public Timer percentileTimer(String name, Map<String,String> tags) {
         return new PercentileTimer(name+".timer", this, tags, useStartTimeAsEventTime).start();
     }
 
