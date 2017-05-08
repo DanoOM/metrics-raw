@@ -39,7 +39,13 @@ Meters are always schedule, and represent the 'rate of events' over time.  If yo
 
 ## Timer
 Timers are automatically started when constructed.  calling stop on the timer will calculate the duration of time since startTime, any registered EventListeners will be updated.
+The startTime/endTime reported will be accurate to the actual time the timer was started/end.
 Timers when stopped can optionally accept additional tags.
+
+## PercentileTimer
+A Timer that reports percentiles.  These Timers will aggregate the data samples, and emit the percentiles requested.  This Timer is sample based, ie. To get the 99th percentile, it will require a buffer of 100 elements, and it will only report once the buffer is full.
+By default PercetileTimers report p90, and p99 (out of a sample size of 100).
+The reported start/endTime are not accurate, and do not represent the actual time the timer ran.  i.e. PercentileTimers are only good for tracking how long something ran. 
 
 ## Counter
 Counters, simply allows you increment/decrement.  When the counter is incremented/decremented a Event be sent to any registered EventListener.  Counters are NOT recommended for actual production use, as the 'graphing' system should be counting events.

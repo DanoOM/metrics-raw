@@ -8,8 +8,8 @@ import java.util.Map;
 //and 'allow' users to create duplicate gauges, this and their internal
 //maps can be removed.
 public class MetricKey {
- final String name;
- final Map<String,String> tags;
+ private final String name;
+ private final Map<String,String> tags;
 
  public MetricKey(String name) {
      this.name = name;
@@ -25,8 +25,8 @@ public class MetricKey {
  public int hashCode() {
      final int prime = 31;
      int result = 1;
-     result = prime * result + ((name == null) ? 0 : name.hashCode());
-     result = prime * result + ((tags == null) ? 0 : tags.hashCode());
+     result = prime * result + ((getName() == null) ? 0 : getName().hashCode());
+     result = prime * result + ((getTags() == null) ? 0 : getTags().hashCode());
      return result;
  }
 
@@ -39,16 +39,24 @@ public class MetricKey {
      if (getClass() != obj.getClass())
          return false;
      MetricKey other = (MetricKey) obj;
-     if (name == null) {
-         if (other.name != null)
+     if (getName() == null) {
+         if (other.getName() != null)
              return false;
-     } else if (!name.equals(other.name))
+     } else if (!getName().equals(other.getName()))
          return false;
-     if (tags == null) {
-         if (other.tags != null)
+     if (getTags() == null) {
+         if (other.getTags() != null)
              return false;
-     } else if (!tags.equals(other.tags))
+     } else if (!getTags().equals(other.getTags()))
          return false;
      return true;
  }
+
+    public Map<String,String> getTags() {
+        return tags;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

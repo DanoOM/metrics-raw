@@ -17,6 +17,9 @@ public class MetricRegistry {
     private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> meters = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
+
+    private final Map<MetricKey, PercentileTimer> percentileTimers = new ConcurrentHashMap<>();
+
     private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10, new DaemonThreadFactory());
     // registries stored by prefix
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
@@ -141,6 +144,19 @@ public class MetricRegistry {
     public Timer timer(String name, Map<String,String> tags) {
     	return new Timer(name+".timer", this, tags, useStartTimeAsEventTime).start();
     }
+
+    public PercentileTimer percentileTimer(String name) {
+        return new PercentileTimer(name +".timer", this).start();
+    }
+
+    public PercentileTimer percetileTimer(String name, String...tags) {
+        return percentileTimer(name, Util.buildTags(tags));
+    }
+
+    public PercentileTimer percentileTimer(String name, Map<String,String> tags) {
+        return new PercentileTimer(name+".timer", this, tags, useStartTimeAsEventTime).start();
+    }
+
 
 
     /** Counters not recommended for real use, but may be
