@@ -1,3 +1,8 @@
+0.4.6
+* Refactor: changed Timer class to interface
+* Refactor: 'new timer' RawTimer (same as old Timer class)
+* New timer Added: PercentileTimer used to only report percentiles based on x-num samples, see readme for details.
+ 
 0.4.4
 * minor Updates - made Long/DoubleEvents constructors public.
 * changed 'serviceTeam' to namespace.
