@@ -17,10 +17,10 @@ public class PercentileTimer extends MetricBase implements Timer {
         }
 	    buffer = sampleSize;
 	    for (int i = 0; i < percentiles.length; i++) {
-	        if (percentiles[i] < 0 || percentiles[i] < 1000) {
+	        if (percentiles[i] < 0 || percentiles[i] > 1000) {
 	            throw new RuntimeException("Illegal perentile!, just be >=0 && < 1000");
 	        }
-	        if (percentiles[i] > sampleSize){
+	        if (percentiles[i] > sampleSize) {
 	            throw new RuntimeException("The specified sample Size is too small to meet your percentile requirements!");
 	        }
 	    }
@@ -44,22 +44,25 @@ public class PercentileTimer extends MetricBase implements Timer {
     }
 
     /** calculates the time from the start time, also triggers an event for Listeners */
-    public long stop() {    	
+    @Override
+    public long stop() {
     	return stop(System.currentTimeMillis() - startTime);
     }
-    
+
     private long stop(long duration) {
         collectData(duration);
         return duration;
     }
-    
+
     /** calculates the time from the startTime, and adds the provided tags,
      * also triggers an event for Listeners */
+    @Override
     public long stop(String... tags) {
         return stop(Util.buildTags(tags));
     }
-    
+
     /** todo This should error out, or 'not' update the duration on an already stopped timer. */
+    @Override
     public long stop(Map<String,String> customTags) {
         long duration = System.currentTimeMillis() - startTime;
         if (this.tags == null) {
@@ -68,7 +71,7 @@ public class PercentileTimer extends MetricBase implements Timer {
         this.tags.putAll(customTags);
         return stop(duration);
     }
-    
+
 
     private void collectData(long duration) {
         MetricKey key = new MetricKey(name, tags);
@@ -86,6 +89,7 @@ public class PercentileTimer extends MetricBase implements Timer {
     }
 
     /** Add a tag to a running timer (todo should error out if timer already stopped) */
+    @Override
     public PercentileTimer addTag(String name, String value) {
         if (this.tags == null){
             this.tags = new HashMap<>();
