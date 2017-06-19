@@ -8,7 +8,7 @@
 	</prerequisites>
 	<groupId>org.dshops</groupId>
 	<artifactId>metrics-raw</artifactId>
-	<version>0.4.6</version>
+	<version>0.4.7</version>
 	<packaging>jar</packaging>
 	<name>Metrics-Raw</name>
 	<description>
