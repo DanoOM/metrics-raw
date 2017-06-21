@@ -82,6 +82,7 @@ public class MetricRegistry {
                         else
                             mr = new MetricRegistry(prefix, startTimeStrategy);
                     }
+                    registries.put(prefix, mr);
                 }
             }
             return mr;

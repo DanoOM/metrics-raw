@@ -16,6 +16,7 @@ public class PercentileTimer extends MetricBase implements Timer {
             throw new RuntimeException("percentiles must be set prior to using a PercentileTimer!");
         }
 	    buffer = sampleSize;
+	    percentilesToReport = percentiles;
 	    for (int i = 0; i < percentiles.length; i++) {
 	        if (percentiles[i] < 0 || percentiles[i] > 1000) {
 	            throw new RuntimeException("Illegal perentile!, just be >=0 && < 1000");
