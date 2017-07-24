@@ -1,3 +1,5 @@
+0.4.9
+* Updated Timer interface - Enable users to manually invoke timer.start(), essentially this allows users to re-use timers, as this resets the starttime.
 0.4.6
 * Refactor: changed Timer class to interface
 * Refactor: 'new timer' RawTimer (same as old Timer class)

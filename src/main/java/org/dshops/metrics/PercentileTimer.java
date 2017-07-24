@@ -38,8 +38,9 @@ public class PercentileTimer extends MetricBase implements Timer {
         super(name, registry, customTags);
     }
 
-    /** Returns a new timer, with startTime = now */
-    Timer start() {
+    /** resets the startTime to now */
+    @Override
+    public Timer start() {
     	startTime = System.currentTimeMillis();
     	return this;
     }

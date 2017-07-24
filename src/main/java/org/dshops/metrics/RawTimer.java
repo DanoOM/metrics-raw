@@ -18,27 +18,34 @@ public class RawTimer extends MetricBase implements Timer{
         this.useStartTimeAsEventTime = useStartTimeAsEventTime;
     }
 
-    /** Returns a new timer, with startTime = now */
-    Timer start() {
+    /** 'resets' the startTime to Now.
+     *   Users can 'reuse' the same timer multple times, by invoking
+     *   start/stop/start/stop..
+     *   Timer Objects are NOT thread safe, and should not be used concurrently.
+     * */
+    @Override
+    public Timer start() {
     	startTime = System.currentTimeMillis();
     	return this;
     }
-    
+
     /** Add a tag to a running timer (todo should error out if timer already stopped) */
+    @Override
     public Timer addTag(String name, String value) {
-        if (this.tags == null){
+        if (this.tags == null) {
             this.tags = new HashMap<>();
         }
         this.tags.put(name,value);
         return this;
     }
 
-    /** calculates the time from the starttime, also triggers an event for Listeners */
-    public long stop() {    	
+    /** calculates the time from the starttime, and triggers an event for the Listeners */
+    @Override
+    public long stop() {
     	return stop(System.currentTimeMillis() - startTime);
     }
-    
-    private long stop(long duration) {        
+
+    private long stop(long duration) {
         registry.postEvent(name,
                            useStartTimeAsEventTime ? startTime : startTime+duration,
                            tags,
@@ -48,11 +55,13 @@ public class RawTimer extends MetricBase implements Timer{
 
     /** calculates the time from the startTime, and adds the provided tags,
      * also triggers an event for Listeners */
+    @Override
     public long stop(String... tags) {
     	return stop(Util.buildTags(tags));
     }
-    
+
     /** todo This should error out, or 'not' update the duration on an already stopped timer. */
+    @Override
     public long stop(Map<String,String> customTags) {
         long duration = System.currentTimeMillis() - startTime;
     	if (this.tags == null) {

@@ -134,6 +134,14 @@ public class MetricRegistry {
         return Collections.unmodifiableMap(registryTags);
     }
 
+    public Timer getTimer(String name) {
+        return new RawTimer(name +".timer", this, useStartTimeAsEventTime);
+    }
+
+    public Timer getTimer(String name, String...tags) {
+        return new RawTimer(name +".timer", this, useStartTimeAsEventTime);
+    }
+
     public Timer timer(String name) {
     	return new RawTimer(name +".timer", this, useStartTimeAsEventTime).start();
     }
