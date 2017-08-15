@@ -402,13 +402,17 @@ public class MetricRegistry {
             synchronized (counts) {
                 counter = counts.get(e.getHash());
                 if (counter == null) {
-                    counter = new ResetCounter();
-                    counts.put(e.getHash(),counter);
+                    counter = new ResetCounter(e.getTimestamp());
+                    counts.put(e.getHash(), counter);
+                    int index = counter.incrementAndGet() ;
+                    e.setIndex(index);
+                    return;
                 }
             }
         }
         try {
-            e.setIndex(counter.incrementAndGet());
+            int index = counter.incrementAndGet() ;
+            e.setIndex(index);
         }
         catch(Exception ex) {
             ex.printStackTrace();
@@ -424,13 +428,19 @@ public class MetricRegistry {
 class ResetCounter {
     public AtomicInteger counter = new AtomicInteger();
     public long ts;
+    public ResetCounter(Long ts) {
+        this.ts = ts;
+    }
     public int incrementAndGet() {
-        int count = counter.incrementAndGet();
+        int count = 1;
         if (System.currentTimeMillis() - ts  > 1) {
             synchronized (this) {
                 ts = System.currentTimeMillis();
-                counter.set(0);
+                counter.set(1);
             }
+        }
+        else {
+            count = counter.incrementAndGet();
         }
         return count;
     }
