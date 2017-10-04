@@ -1,3 +1,7 @@
+0.5.2
+* added scheduleMaxGauge(..) - allows one pull gauage at millisecond accuracy, but only report the max at the 'reportIntervalInSeconds'
+0.5.1
+* skipped
 0.5.0
 * bug fix: metrics generated within same milliseconds would sometimes be dropped. 
 0.4.9

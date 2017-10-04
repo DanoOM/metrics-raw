@@ -302,6 +302,28 @@ public class MetricRegistry {
             }
         }
     }
+    
+    /** Allows the provided gauge to invoked at millisecond accuracy, but will only report the max result of those calls at the reportInterval */
+    public void scheduleMaxGauge(String name, int collectionIntervalInMillis, int reportIntervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
+        scheduleMaxGauge(name,collectionIntervalInMillis, reportIntervalInSeconds, gauge, Util.buildTags(tags));
+    }
+
+    public void scheduleMaxGauge(String name, int collectionIntervalInMilis, int reportIntervalInSeconds, Gauge<? extends Number> gauge, Map<String,String> tags) {
+        name = name + ".gauge";
+        MetricKey key = new MetricKey(name, tags);
+        if (!gauges.containsKey(key)) {
+            synchronized (gauge) {
+                if (!gauges.containsKey(key)) {
+                    gauges.put(key, gauge);
+                    pools.scheduleWithFixedDelay(new GaugeRunner(key, gauge, reportIntervalInSeconds, this),
+                                                 0,
+                                                 collectionIntervalInMilis,                                                 
+                                                 TimeUnit.MILLISECONDS);
+                }
+            }
+        }
+    }
+
 
     public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
         name = name + ".meter";
