@@ -1,4 +1,4 @@
-0.5.3
+0.6.0
 * no-change, rev updated to stay in sync with Kairosdb listener.
 0.5.2
 * added scheduleMaxGauge(..) - allows one pull gauage at millisecond accuracy, but only report the max at the 'reportIntervalInSeconds'

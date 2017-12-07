@@ -324,7 +324,6 @@ public class MetricRegistry {
         }
     }
 
-
     public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
         name = name + ".meter";
         MetricKey key = new MetricKey(name, Util.buildTags(tags));
