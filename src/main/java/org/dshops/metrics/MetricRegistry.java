@@ -265,6 +265,7 @@ public class MetricRegistry {
     public void event(String name, long value, String...customTags) {
         event(name,value,Util.buildTags(customTags));
     }
+
     public void event(String name, double value, String...customTags) {
         event(name,value,Util.buildTags(customTags));
     }
@@ -281,6 +282,35 @@ public class MetricRegistry {
     public void event(String name, double value, Map<String,String> customTags) {
         Map<String, String> ctags = mergeTags(customTags);
         dispatchEvent(new DoubleEvent(prefix + name + ".event", ctags, System.currentTimeMillis(),value));
+    }
+
+    public void eventAtTs(String name, long ts) {
+        eventAtTs(name, ts, 1);
+    }
+
+    public void eventAtTs(String name, long ts, long value) {
+        eventAtTs(name, value, Collections.EMPTY_MAP);
+    }
+
+    public void eventAtTs(String name, long ts, double value) {
+        eventAtTs(name, ts, value, Collections.EMPTY_MAP);
+    }
+    public void eventAtTs(String name, long ts, Map<String,String> customTags) {
+        eventAtTs(name, ts, 1, customTags);
+    }
+    public void eventAtTs(String name, long ts, double value, String...customTags) {
+        eventAtTs(name, ts, value, Util.buildTags(customTags));
+    }
+    public void eventAtTs(String name, long ts, long value, String...customTags) {
+        eventAtTs(name, ts, value, Util.buildTags(customTags));
+    }
+    public void eventAtTs(String name, long ts, double value, Map<String,String> customTags) {
+        Map<String, String> ctags = mergeTags(customTags);
+        dispatchEvent(new DoubleEvent(prefix + name + ".event", ctags, ts, value));
+    }
+    public void eventAtTs(String name, long ts, long value, Map<String,String> customTags) {
+        Map<String, String> ctags = mergeTags(customTags);
+        dispatchEvent(new DoubleEvent(prefix + name + ".event", ctags, ts, value));
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
@@ -302,7 +332,7 @@ public class MetricRegistry {
             }
         }
     }
-    
+
     /** Allows the provided gauge to invoked at millisecond accuracy, but will only report the max result of those calls at the reportInterval */
     public void scheduleMaxGauge(String name, int collectionIntervalInMillis, int reportIntervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
         scheduleMaxGauge(name,collectionIntervalInMillis, reportIntervalInSeconds, gauge, Util.buildTags(tags));
@@ -317,7 +347,7 @@ public class MetricRegistry {
                     gauges.put(key, gauge);
                     pools.scheduleWithFixedDelay(new GaugeRunner(key, gauge, reportIntervalInSeconds, this),
                                                  0,
-                                                 collectionIntervalInMilis,                                                 
+                                                 collectionIntervalInMilis,
                                                  TimeUnit.MILLISECONDS);
                 }
             }
