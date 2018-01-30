@@ -289,7 +289,7 @@ public class MetricRegistry {
     }
 
     public void eventAtTs(String name, long ts, long value) {
-        eventAtTs(name, value, Collections.EMPTY_MAP);
+        eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
 
     public void eventAtTs(String name, long ts, double value) {
