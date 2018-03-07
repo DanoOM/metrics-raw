@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
+/** Consider using the EventPercentileInfo (generic version) */
 public class PercentileInfo {
     int[] values;
     int valuesCollected = 0;
