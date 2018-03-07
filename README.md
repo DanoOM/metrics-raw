@@ -1,5 +1,5 @@
 # metrics-raw
-Java Metrics Client Library to send RAW metrics to one or more datastores, heavily influenced by the dropwizard metrics library.
+Java Metrics Client Library to send RAW metrics to one or more datastores, heavily influenced by the dropwizard metrics library.  Sending RAW metric data can be extreemly costly under some conditions such as very has tps on cassandra/network/rendering layers, as such metrics-raw also enables sample based metrics (for example PercentileTimer will only report a 99th percentile if we have at least 100 samples).
 
 # API
 The api is heavily influenced by dropwizard's great metrics api, and uses vary similar concepts.
@@ -9,14 +9,20 @@ The MetricRegistry is used to create/attach metric objects.
 The MetricRegsitry allows users to attach 'global' tags, which will be sent with every metric to the backend datastore.
 The tags allow systems like grafana to query/aggregate metrics by tag.
 
-The main methods of interest:
+The main metric methods of interest:
 
 1. **addTag(tag,value)** - Attaches the tag to registry.
-2. **timer(name, tags...)**  - Creates a new Timer instance with the specified name, the timer is started immediately.
-3. **event(name)** - generates an event, that will be dispatched to any registered EventListener.
-4. **counter(name)** - get/create a counter with the associated name.
-5. **scheduleGauge(name, interval, Gauge)** - schedules the gauge to be invoked on a periodic interval, (based on the last run)
-6. **meter(name, interval, tags...)** 
+2. **timer(name, tags...)**  - Creates a new Timer instance with the specified name, the timer is started immediately. ** use sparingly **
+3. **PercentileTimer(name,tags..)** - creates a timer, but will only emmit percentiles once n-number of samples have been reached (@todo consider replacing with 'bucketTimer')
+3. **event(name)** - generates an event, that will be dispatched to any registered EventListener. ** use sparingly **
+4. **eventBucket(name)** -- generate an event that is 'bucket' to n-samples
+5. ** alert() ** -- generates an 'alert', essentially same as event, except is intended to explicitly generate an 'alert' (from a rendering layer). ** use sparingly ** 
+6. **counter(name)** - get/create a counter with the associated name.
+** use sparingly **
+7. **scheduleGauge(name, interval, Gauge)** - schedules the gauge to be invoked on a periodic interval, (based on the last run)
+8. **scheduleMaxGauge()** -- special case, gauges, will pull the 'gauge' at a higher frequency then is being reported, but will only report the maximum seen during that time. (@todo add scheduleMinGauge?)
+9. **meter(name, interval, tags...)**
+ 
 
 At a high level metrics can be constructed/referenced in 4 ways:
 
@@ -24,10 +30,22 @@ At a high level metrics can be constructed/referenced in 4 ways:
 * metricRegistry.metric(String name,string...tags) - create/get metric identified by name and tags (where tags is tagName/value..)
 * metricRegistry.metric(String name,Map tags) - create/get metric identified by name and tags where tags is map of tagName/value
 
+# Definitions
 
 ## Event
-We have no meters in this api, since we send the raw metric, as such we simply have 'events' in place of meters.
 Events will be dispatched to any EventListener.  An Event will be triggered when any metric is modified, or when an user directly creates an event via the MetricRegistry.
+** RAW Events should be used sparingly (less than 1 tps), as too many events can bog down the network, as well 'rendering' layers of that data (Use EventBuckets instead) **
+
+
+## EventBucket
+An EventBucket represents a set of Events, by default 100 events per bucket, this can changed via EventBucket.initBucketDataToReport(..)
+EventBuckets by default will report the 99th percentile only, you can again modify this via initBucketDataToReport, which allows multiple percentiles, as well as min/max/ave/std.
+When EventBuckets report, it the last event in the Bucket timestamp will be used for the entire bucket
+
+## Alerts
+Alerts are similar to Events, however rather then being emmited with metric name = 'metric-name', the name emmited will be 'alerts', and instead a tag 'alertName' == alertName will be generated.  This allows/ensures all alerts will be emmited with the same name, making alerts easier to track, and trigger off of.
+** Alerts should be used sparingly (less than 1 tps), as too many alerts can bog down the network, as well 'rendering' layers of that data (Use @todo AlertBucket? or a 'timed'AlertBucket..where alerts are emmited after x-seconds rather then samples) **
+
 
 ## Gauge
 Gauges are always scheduled, the users must implement getValue(), which returns either a Long, or a Double.  This is a functional interface.  Optionally users can elect to implement Map<String,String> getTags() if the gauge needs any tags associated with it.
@@ -41,20 +59,36 @@ Meters are always schedule, and represent the 'rate of events' over time.  If yo
 Timers are automatically started when constructed.  calling stop on the timer will calculate the duration of time since startTime, any registered EventListeners will be updated.
 The startTime/endTime reported will be accurate to the actual time the timer was started/end.
 Timers when stopped can optionally accept additional tags.
+** Timers should be used sparingly (less than 1 tps), as too many timers can bog down the network, as well as the 'rendering' layers of that data, (use PercentileTimers instead) **
+
 
 ## PercentileTimer
 A Timer that reports percentiles.  These Timers will aggregate the data samples, and emit the percentiles requested.  This Timer is sample based, ie. To get the 99th percentile, it will require a buffer of 100 elements, and it will only report once the buffer is full.
 By default PercetileTimers report p90, and p99 (out of a sample size of 100).
-The reported start/endTime are not accurate, and do not represent the actual time the timer ran.  i.e. PercentileTimers are only good for tracking how long something ran. 
+The reported start/endTime are not accurate, and do not represent the actual time the timer ran.  i.e. PercentileTimers are only good for tracking how long something ran.
+ 
 
 ## Counter
 Counters, simply allows you increment/decrement.  When the counter is incremented/decremented a Event be sent to any registered EventListener.  Counters are NOT recommended for actual production use, as the 'graphing' system should be counting events.
 For example counting http requests is redundant if you are generating events.
+** Counters should be used sparingly (less than 1 tps), as too many timers can bog down the network, as well as the 'rendering' layers of that data, (use @todo add BucketCounter?) **
+
 
 ## EventListener
 The EventListener, (aka Reporter) is responsible for sending events (metrics) to its associated backend datastore.
 EventListers should be implemented Asynchronously, and should never block the calling the thread.
 EventListeners implement one method: onEvent(Event).
+
+# Conventions
+Today when metrics are generated, the name of the metric will have a suffic added, conveying what type of metric it is.
+1. timers get .timer appended
+2. meter get .meter appended
+3. gauge get .gauge added
+4. counter get .counter added
+5. alerts - All Alerts are emitted with the name alert, and tag: alertName=alertName
+* Considiration: for PercentileTimers & eventBuckets, consider adding tag indicating the 'sample-count' (which will of course be 'constant' as this cannot vary).
+
+
 
 ## Provided Listeners
 At this point we only have 2 Listeners implemented

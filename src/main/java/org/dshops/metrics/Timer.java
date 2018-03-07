@@ -2,7 +2,7 @@ package org.dshops.metrics;
 
 import java.util.Map;
 
-public interface  Timer {
+public interface Timer {
 
     /** Add a tag to a running timer (todo should error out if timer already stopped) */
     public Timer addTag(String name, String value);

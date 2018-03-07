@@ -166,8 +166,6 @@ public class MetricRegistry {
         return new PercentileTimer(name+".timer", this, tags, useStartTimeAsEventTime).start();
     }
 
-
-
     /** Counters not recommended for real use, but may be
      * useful for testing/early integration. */
     public Counter counter(String name) {
@@ -287,11 +285,9 @@ public class MetricRegistry {
     public void eventAtTs(String name, long ts) {
         eventAtTs(name, ts, 1);
     }
-
     public void eventAtTs(String name, long ts, long value) {
         eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
-
     public void eventAtTs(String name, long ts, double value) {
         eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
@@ -311,6 +307,18 @@ public class MetricRegistry {
     public void eventAtTs(String name, long ts, long value, Map<String,String> customTags) {
         Map<String, String> ctags = mergeTags(customTags);
         dispatchEvent(new DoubleEvent(prefix + name + ".event", ctags, ts, value));
+    }
+
+    public void eventBucket(String name) {
+        eventBucket(name, 1l);
+    }
+
+    public void eventBucket(String name, long value) {
+        new EventBucket(name, this).update(value);
+    }
+
+    public void eventBucket(String name, double value) {
+        new EventBucket(name, this).update(value);
     }
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
