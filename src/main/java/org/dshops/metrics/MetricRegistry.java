@@ -310,7 +310,11 @@ public class MetricRegistry {
     }
 
     public void eventBucket(String name) {
-        eventBucket(name, 1l);
+        eventBucket(name, null);
+    }
+
+    public void eventBucket(String name, String...customTags) {
+        eventBucket(name, 1l, Util.buildTags(customTags));
     }
 
     public void eventBucket(String name, long value) {
@@ -320,6 +324,23 @@ public class MetricRegistry {
     public void eventBucket(String name, double value) {
         new EventBucket(name, this).update(value);
     }
+
+    public void eventBucket(String name, long value, String...customTags) {
+        eventBucket(name, value,Util.buildTags(customTags));
+    }
+
+    public void eventBucket(String name, double value, String...customTags) {
+        eventBucket(name, value, Util.buildTags(customTags));
+    }
+
+    public void eventBucket(String name, double value, Map<String,String> customTags) {
+        new EventBucket(name, this, customTags).update(value);
+    }
+
+    public void eventBucket(String name, long value, Map<String,String> customTags) {
+        new EventBucket(name, this, customTags).update(value);
+    }
+
 
     public void scheduleGauge(String name, int intervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
     	scheduleGauge(name,intervalInSeconds, gauge, Util.buildTags(tags));

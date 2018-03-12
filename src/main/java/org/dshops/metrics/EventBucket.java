@@ -8,9 +8,9 @@ public class EventBucket extends MetricBase {
     private static Map<MetricKey,EventPercentileInfo> percentilesInfos = new ConcurrentHashMap<>();
 	private static int[] percentilesToReport = {99};
 	private static int buffer = 100;
-	
+
 	public static final int STAT_MIN = 1;
-    public static final int STAT_MAX = 2;    
+    public static final int STAT_MAX = 2;
 	public static final int STAT_STD = 4;
 	public static final int STAT_AVE = 8;
 	private static int stat_funcs = 0;
@@ -31,7 +31,6 @@ public class EventBucket extends MetricBase {
             if (percentiles[i] < 0 || percentiles[i] > 1000) {
                 throw new RuntimeException("Illegal perentile!, just be >=0 && < 1000");
             }
-
             double x = Math.round((sampleSize / 100d) * percentiles[i]);
             if (x >= sampleSize) {
                 throw new RuntimeException("The specified sample Size is too small to meet your percentile requirements!");
@@ -44,6 +43,10 @@ public class EventBucket extends MetricBase {
 	 * */
 	EventBucket(String name, MetricRegistry registry) {
         super(name, registry, null);
+    }
+
+	EventBucket(String name, MetricRegistry registry, Map<String,String> customTags) {
+        super(name, registry, customTags);
     }
 
     public void update(Number n) {
