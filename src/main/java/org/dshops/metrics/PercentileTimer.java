@@ -11,7 +11,7 @@ public class PercentileTimer extends MetricBase implements Timer {
 	private static int buffer = 100;
 
 
-	public static void initPercentilesToReport(int[] percentiles, int sampleSize) {
+	public static void initPercentilesToReport(int[] percentiles, int sampleSize) {		
 	    if (!percentilesInfos.isEmpty()) {
             throw new RuntimeException("percentiles must be set prior to using a PercentileTimer!");
         }

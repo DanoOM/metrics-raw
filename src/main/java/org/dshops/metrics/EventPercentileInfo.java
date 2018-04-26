@@ -5,10 +5,11 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.LongAdder;
 
 public class EventPercentileInfo<T extends Number> {
-    T[] values;
-    int valuesCollected = 0;
+    T[] values;    
+    int valuesCollected;
     private final MetricRegistry registry;
     private final int statFuncs;
 
@@ -21,6 +22,7 @@ public class EventPercentileInfo<T extends Number> {
         }
     });
     private final int[] percentilesToReport;
+     
     private final MetricKey key;
 
     public EventPercentileInfo(MetricRegistry registry, Number type, int buffer, int[] percentilesToReport, int statFuncs, MetricKey key) {
@@ -31,17 +33,20 @@ public class EventPercentileInfo<T extends Number> {
         this.key = key;
     }
 
-    public void update(T duration) {
-        synchronized (this) {
-            values[valuesCollected] = duration;
-            valuesCollected++;
-            if (valuesCollected >= values.length) {
-                T[] tmp = values;
-                values =  (T[])Array.newInstance(values.getClass().getComponentType(), values.length);   //new values.getClass().get [values.length];
-                valuesCollected = 0;
-                threadPool.submit(() -> reportMetrics(tmp));
-            }
-        }
+    public void update(T eventValue) {
+    	// @todo Many optmizations possible here...depending on what the user is emitting
+    	// we only need to store n-values if percentiles are being used. (technically only need to store sample - min(percentile))
+    	// can likely avoid sync only reporting count.
+	        synchronized (this) {
+	            values[valuesCollected] = eventValue;
+	            valuesCollected++;
+	            if (valuesCollected >= values.length) {
+	                T[] tmp = values;
+	                values =  (T[])Array.newInstance(values.getClass().getComponentType(), values.length);   //new values.getClass().get [values.length];
+	                valuesCollected = 0;
+	                threadPool.submit(() -> reportMetrics(tmp));
+	            }	        
+	    	}
     }
 
     public void reportMetrics(T[] dataValues) {
@@ -84,6 +89,7 @@ public class EventPercentileInfo<T extends Number> {
                 registry.postEvent(key.getName() + ".ave", ts, key.getTags(), mean);
             }
         }
+        registry.postEvent(key.getName() + ".count", ts, key.getTags(), dataValues.length);
     }
     private double getMean(final T[] dataValues) {
         double sum = 0.0;

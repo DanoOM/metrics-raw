@@ -4,9 +4,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/** EventBuckets represents n number of events, by default when eventBuckets
+ *  are emitted to the metric store, they will be 100 events.
+ *  EventBuckets when emitted to the metric store can emit the following datapoints.
+ *  
+ *  count - always emitted.
+ *  min   -  optional
+ *  max   -  optional
+ *  ave   -  optional
+ *  std   -  optional
+ *  percentiles (configurable) - optiional
+ *  
+ *  Users can use initBucketDataToReport(..) methods to tweak what
+ *  is emitted, as well as the sample size  
+ * */
 public class EventBucket extends MetricBase {
     private static Map<MetricKey,EventPercentileInfo> percentilesInfos = new ConcurrentHashMap<>();
-	private static int[] percentilesToReport = {99};
+	private static int[] percentilesToReport = {};
 	private static int buffer = 100;
 
 	public static final int STAT_MIN = 1;
