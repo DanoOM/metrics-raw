@@ -1,5 +1,8 @@
+0.6.5
+* Bug fix - Some situations could cause 'duplicate' metric-registries to be created
+* Enhancement - Buckets (events/percentileTimers) will now emit a 'secondary' metric: <metric-name>.count to indicate the number of samples
 0.6.2
- * added .count for eventBucket
+* added .count for eventBucket
 0.6.0
 * no-change, rev updated to stay in sync with Kairosdb listener.
 0.5.2

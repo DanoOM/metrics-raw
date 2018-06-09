@@ -32,10 +32,10 @@ public class PercentileInfo {
         synchronized (this) {
             values[valuesCollected] = (int)duration;
             valuesCollected++;
-            if (valuesCollected >= values.length) {                
+            if (valuesCollected >= values.length) {
                 int[] tmp = values;
                 values = new int[values.length];
-                valuesCollected = 0;                
+                valuesCollected = 0;
                 threadPool.submit(() -> reportPercentiles(tmp));
             }
         }
@@ -48,6 +48,7 @@ public class PercentileInfo {
             long percentileValue = getPercentile(p, dataValues);
             if (registry != null) {
                 registry.postEvent(key.getName() + ".p"+p, ts, key.getTags(), percentileValue);
+                registry.postEvent(key.getName() + ".count", ts, key.getTags(), dataValues.length);
             }
             else{
                 System.out.println(key.getName()+ ".p" +p+"=="+ percentileValue);

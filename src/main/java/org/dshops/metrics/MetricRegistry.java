@@ -82,7 +82,6 @@ public class MetricRegistry {
                         else
                             mr = new MetricRegistry(prefix, startTimeStrategy);
                     }
-                    registries.put(prefix, mr);
                 }
             }
             return mr;
@@ -93,7 +92,7 @@ public class MetricRegistry {
     	this.prefix = prefix;
         this.registryTags = tags;
         if (enableRegistryCache) {
-            registries.put(prefix.substring(prefix.length() - 1) , this);
+            registries.put(prefix , this);
         }
         useStartTimeAsEventTime = startTimeStrategy;
     }
@@ -103,7 +102,7 @@ public class MetricRegistry {
         this.registryTags = null;
         useStartTimeAsEventTime = startTimeStrategy;
         if (enableRegistryCache) {
-            registries.put(prefix.substring(prefix.length() - 1) , this);
+            registries.put(prefix , this);
         }
     }
 
@@ -123,6 +122,9 @@ public class MetricRegistry {
      * (note: '.' on end)
      * */
     public static MetricRegistry getRegistry(String prefix) {
+        if (!prefix.endsWith(".")) {
+            return registries.get(prefix + ".");
+        }
         return registries.get(prefix);
     }
 
