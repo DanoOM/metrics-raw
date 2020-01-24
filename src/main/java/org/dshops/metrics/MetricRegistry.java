@@ -20,7 +20,7 @@ public class MetricRegistry {
 
     private final Map<MetricKey, PercentileTimer> percentileTimers = new ConcurrentHashMap<>();
 
-    private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10, new DaemonThreadFactory());
+    private ScheduledThreadPoolExecutor pools = null; 
     // registries stored by prefix
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
     private boolean useStartTimeAsEventTime = false;
@@ -398,7 +398,7 @@ public class MetricRegistry {
                     pools.scheduleWithFixedDelay(new GaugeRunner(key, meter, this),
                                                  0,
                                                  intervalInSeconds,
-                                                 TimeUnit.SECONDS);
+                                                 TimeUnit.SECONDS);                   
                 }
             }
         }
@@ -419,8 +419,17 @@ public class MetricRegistry {
     }
 
     public void addEventListener(EventListener listener) {
+    	if (pools == null) {
+    		// ensure thread pool is up
+    		synchronized (listeners) {
+    			if (pools == null)
+    				pools = new ScheduledThreadPoolExecutor(4, new DaemonThreadFactory());				
+			}
+    	}
+
         if (!listeners.contains(listener)) {
             synchronized (listeners) {
+            	
                 if (!listeners.contains(listener)) {
                     if (listener instanceof EventIndexingListener){
                         enableMilliIndexing = true;
@@ -431,18 +440,92 @@ public class MetricRegistry {
         }
     }
 
+    /** 
+     * @Deprecated use removeAllEventListeners(boolean stop)
+     * */
+    @Deprecated
     public void removeEventListener(EventListener listener) {
-        listener.stop();
+        listener.stop();        
         listeners.remove(listener);
-    }
-
-    public void removeAllEventListeners() {
-        for(EventListener listener : listeners) {
-            listener.stop();
+        if (listeners.isEmpty()) {
+        	try {
+        		pools.shutdown();
+        		
+        	}
+        	catch(Exception e) {
+        		// no-op
+        	}
+        	finally {
+        		pools = null;
+        	}
         }
-        listeners.clear();
+    }
+    
+    /**
+     * Will remove the specified listener from this MetricRegistry
+     * If stop = true, will also stop the listener if the listener is shared with other
+     * MetricRegistries, this will STOP for all metricRegistries!
+     * */
+    public void removeEventListener(EventListener listener, boolean stop) {
+        
+    	if (stop) {
+    		listener.stop();
+    		gauges.clear();
+            meters.clear();
+            counters.clear();
+    	}
+    	
+        listeners.remove(listener);
+        if (listeners.isEmpty()) {
+        	try {
+        		gauges.clear();
+                meters.clear();
+        		pools.shutdown();        		
+        	}
+        	catch(Exception e) {
+        		// no-op
+        	}
+        	finally {
+        		pools = null;
+        	}
+        }
     }
 
+    /** 
+     * @Deprecated use removeAllEventListeners(boolean stop)
+     * */
+    @Deprecated    
+    public void removeAllEventListeners() {
+    	removeAllEventListeners(true);
+    }
+
+    /**
+     * Will remove all listeners for this metricRegistory
+     * If stop = true, will also stop the listener if the listener is shared with other
+     * MetricRegistries, this will STOP for all metricRegistries!
+     * */
+    public void removeAllEventListeners(boolean stop) {
+    	if (stop) {
+	        for(EventListener listener : listeners) {
+	            listener.stop();
+	        }
+    	}
+        listeners.clear();
+        try
+        {
+        	gauges.clear();
+            meters.clear();
+            counters.clear();
+        	pools.shutdown();        	
+        }
+    	catch(Exception e) {
+    		// no-op
+    	}
+        finally {
+    		pools = null;
+    	}      
+    }
+    
     public List<EventListener> getListeners() {
         return Collections.unmodifiableList(listeners);
     }
