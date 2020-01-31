@@ -9,16 +9,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+@SuppressWarnings("rawtypes")
 public class MetricRegistry {
 	private final String prefix;
     private final Map<String,String> registryTags;
     private final Map<MetricKey, Counter> counters = new ConcurrentHashMap<>();
-    private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
+    
+	private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> meters = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
-
-    private final Map<MetricKey, PercentileTimer> percentileTimers = new ConcurrentHashMap<>();
 
     private ScheduledThreadPoolExecutor pools = null; 
     // registries stored by prefix
@@ -109,6 +108,7 @@ public class MetricRegistry {
     /** By Default registries created with the same signature will be re-used,
      * this can be disabled (typically done for testing).
      * Changing this value after a registry is created as know effect.
+     * @param enableRegistryCaching flag to enable/disable registry caching (re-use) 
      * */
     public static void enableRegistryCaching(boolean enableRegistryCaching) {
         enableRegistryCache = enableRegistryCaching;
@@ -120,6 +120,8 @@ public class MetricRegistry {
 
     /** Returns a previously created registry, where prefix = serviceTeam.application.appType
      * (note: '.' on end)
+     * @param prefix the prefix for the registry
+     * @return The matching MetricRegistry in question, or null if non found.
      * */
     public static MetricRegistry getRegistry(String prefix) {
         if (!prefix.endsWith(".")) {
@@ -169,16 +171,20 @@ public class MetricRegistry {
     }
 
     /** Counters not recommended for real use, but may be
-     * useful for testing/early integration. */
+     * useful for testing/early integration. 
+     * @param name the name of the counter
+     * @return the counter
+     * */
     public Counter counter(String name) {
         name = name+".counter";
-        Counter c = getCounters().get(new MetricKey(name));
-        if (c == null){
+        MetricKey key = new MetricKey(name);
+        Counter c = getCounters().get(key);        
+        if (c == null) {
             synchronized (getCounters()) {
-                c = getCounters().get(name);
+                c = getCounters().get(key);
                 if (c == null) {
                     Counter tmp = new Counter(name, this);
-                    getCounters().put(new MetricKey(name),tmp);
+                    getCounters().put(key,tmp);
                     return tmp;
                 }
             }
@@ -209,15 +215,20 @@ public class MetricRegistry {
 
     /** Generates an alert, where the metricName is:
      *     ServiceTeam.app.type.alerts
-     *     tag will contain a tag, called alertName, with the alertName passed here.s
+     *     tag will contain a tag, called alertName, with the alertName passed here.
+     *     @param alertName the alername, will manifest in the name tag
      * */
-    public void alert(String alertName) {
+   
+    @SuppressWarnings("unchecked")
+	public void alert(String alertName) {
         alert(alertName, 1, Collections.EMPTY_MAP);
     }
+    @SuppressWarnings("unchecked")
     public void alert(String alertName, String...customTags) {
         alert(alertName, 1, Collections.EMPTY_MAP);
     }
 
+    @SuppressWarnings("unchecked")
     public void alert(String alertName, long value) {
         alert(alertName, value, Collections.EMPTY_MAP);
     }
@@ -232,6 +243,7 @@ public class MetricRegistry {
         dispatchEvent(new LongEvent(prefix + "alerts", ctags, System.currentTimeMillis(), value));
     }
 
+    @SuppressWarnings("unchecked")
     public void alert(String alertName, double value) {
         alert(alertName, value, Collections.EMPTY_MAP);
     }
@@ -250,10 +262,12 @@ public class MetricRegistry {
         event(name,1);
     }
 
+    @SuppressWarnings("unchecked")
     public void event(String name, long value) {
         event(name,value,Collections.EMPTY_MAP);
     }
 
+    @SuppressWarnings("unchecked")
     public void event(String name, double value) {
         event(name,value,Collections.EMPTY_MAP);
     }
@@ -287,9 +301,12 @@ public class MetricRegistry {
     public void eventAtTs(String name, long ts) {
         eventAtTs(name, ts, 1);
     }
+    
+    @SuppressWarnings("unchecked")
     public void eventAtTs(String name, long ts, long value) {
         eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
+    @SuppressWarnings("unchecked")
     public void eventAtTs(String name, long ts, double value) {
         eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
@@ -312,7 +329,7 @@ public class MetricRegistry {
     }
 
     public void eventBucket(String name) {
-        eventBucket(name, null);
+        eventBucket(name, 1);
     }
 
     public void eventBucket(String name, String...customTags) {
@@ -355,7 +372,7 @@ public class MetricRegistry {
             synchronized (gauge) {
                 if (!gauges.containsKey(key)) {
                     gauges.put(key, gauge);
-                    pools.scheduleWithFixedDelay(new GaugeRunner(key, gauge, this),
+                    pools.scheduleWithFixedDelay(new GaugeRunner<>(key, gauge, this),
                                                  0,
                                                  intervalInSeconds,
                                                  TimeUnit.SECONDS);
@@ -364,7 +381,14 @@ public class MetricRegistry {
         }
     }
 
-    /** Allows the provided gauge to invoked at millisecond accuracy, but will only report the max result of those calls at the reportInterval */
+    /** Allows the provided gauge to invoked at millisecond accuracy, but will only report the max result of those calls at the reportInterval 
+     * @param name name of gauge 
+     * @param collectionIntervalInMillis frequency the values is inspected (frequency function is invoked)
+     * @param reportIntervalInSeconds frequency to report the value
+     * @param gauge the gauge to invoke
+     * @param tags one more more tags
+     * 
+     * */
     public void scheduleMaxGauge(String name, int collectionIntervalInMillis, int reportIntervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
         scheduleMaxGauge(name,collectionIntervalInMillis, reportIntervalInSeconds, gauge, Util.buildTags(tags));
     }
@@ -376,7 +400,7 @@ public class MetricRegistry {
             synchronized (gauge) {
                 if (!gauges.containsKey(key)) {
                     gauges.put(key, gauge);
-                    pools.scheduleWithFixedDelay(new GaugeRunner(key, gauge, reportIntervalInSeconds, this),
+                    pools.scheduleWithFixedDelay(new GaugeRunner<>(key, gauge, reportIntervalInSeconds, this),
                                                  0,
                                                  collectionIntervalInMilis,
                                                  TimeUnit.MILLISECONDS);
@@ -385,7 +409,8 @@ public class MetricRegistry {
         }
     }
 
-    public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
+    @SuppressWarnings("unchecked")
+	public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
         name = name + ".meter";
         MetricKey key = new MetricKey(name, Util.buildTags(tags));
         Gauge meter = meters.get(key);
@@ -395,7 +420,7 @@ public class MetricRegistry {
                 if (meter == null) {
                     meter = new MeterImpl();
                     meters.put(key,meter);
-                    pools.scheduleWithFixedDelay(new GaugeRunner(key, meter, this),
+                    pools.scheduleWithFixedDelay(new GaugeRunner<>(key, meter, this),
                                                  0,
                                                  intervalInSeconds,
                                                  TimeUnit.SECONDS);                   
@@ -441,7 +466,8 @@ public class MetricRegistry {
     }
 
     /** 
-     * @Deprecated use removeAllEventListeners(boolean stop)
+     * @deprecated use removeAllEventListeners(boolean stop)
+     * @param listener Eventlistener to remove
      * */
     @Deprecated
     public void removeEventListener(EventListener listener) {
@@ -465,6 +491,8 @@ public class MetricRegistry {
      * Will remove the specified listener from this MetricRegistry
      * If stop = true, will also stop the listener if the listener is shared with other
      * MetricRegistries, this will STOP for all metricRegistries!
+     * @param listener Eventlistener to remove
+     * @param stop set to true to also terminate the listener
      * */
     public void removeEventListener(EventListener listener, boolean stop) {
         
@@ -492,7 +520,7 @@ public class MetricRegistry {
     }
 
     /** 
-     * @Deprecated use removeAllEventListeners(boolean stop)
+     * @deprecated use removeAllEventListeners(boolean stop)
      * */
     @Deprecated    
     public void removeAllEventListeners() {
@@ -503,6 +531,7 @@ public class MetricRegistry {
      * Will remove all listeners for this metricRegistory
      * If stop = true, will also stop the listener if the listener is shared with other
      * MetricRegistries, this will STOP for all metricRegistries!
+     * @param stop set to true to terminate/stop all event listeners
      * */
     public void removeAllEventListeners(boolean stop) {
     	if (stop) {

@@ -1,3 +1,5 @@
+0.6.7
+* deprecated removeEventListener(listener), and removeAllEventListeners(), in favor of remvoveEventLIstener(listener,boolean), removeAllEventListener(boolean), where boolean indicates if listener(s) should be terminated
 0.6.5
 * Bug fix - Some situations could cause 'duplicate' metric-registries to be created
 * Enhancement - Buckets (events/percentileTimers) will now emit a 'secondary' metric: <metric-name>.count to indicate the number of samples
