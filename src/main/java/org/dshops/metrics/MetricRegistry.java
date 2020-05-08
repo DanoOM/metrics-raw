@@ -2,6 +2,7 @@ package org.dshops.metrics;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +22,7 @@ public class MetricRegistry {
 
     private ScheduledThreadPoolExecutor pools = null; 
     // registries stored by prefix
-    private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+    private static final Map<String, List<MetricRegistry>> registries = new ConcurrentHashMap<>();
     private boolean useStartTimeAsEventTime = false;
     private boolean enableMilliIndexing = false;
     private static boolean enableRegistryCache = true;
@@ -70,20 +71,30 @@ public class MetricRegistry {
             return this;
         }
 
-        public MetricRegistry build() {
-            MetricRegistry mr = registries.get(prefix);
-            if (mr == null) {
-                synchronized (registries) {
-                    mr = registries.get(prefix);
-                    if (mr == null) {
-                        if (tags.size() > 0)
-                            mr = new MetricRegistry(prefix, startTimeStrategy, tags);
-                        else
-                            mr = new MetricRegistry(prefix, startTimeStrategy);
-                    }
+        public MetricRegistry build() {            
+            List<MetricRegistry> regs = registries.get(prefix);            
+            if (regs != null) {
+                // tag set must match.
+                for (MetricRegistry mr : regs) {
+                    if (mr.registryTags.equals(tags))
+                        return mr;
                 }
+            }            
+            synchronized (registries) {
+                if (regs != null) {
+                    // tag set must match.
+                    for (MetricRegistry mr : regs) {
+                        if (mr.registryTags.equals(tags))
+                            return mr;
+                    }
+                }   
+                MetricRegistry mr = null; 
+                if (tags.size() > 0)
+                    mr = new MetricRegistry(prefix, startTimeStrategy, tags);
+                else
+                    mr = new MetricRegistry(prefix, startTimeStrategy);
+                return mr;
             }
-            return mr;
         }
     }
 
@@ -91,7 +102,15 @@ public class MetricRegistry {
     	this.prefix = prefix;
         this.registryTags = tags;
         if (enableRegistryCache) {
-            registries.put(prefix , this);
+            List<MetricRegistry> lst = null;
+            if (registries.containsKey(prefix)) {
+                lst = registries.get(prefix);
+            }
+            else {
+                lst = new LinkedList<>();
+                registries.put(prefix, lst);
+            }
+            lst.add(this);            
         }
         useStartTimeAsEventTime = startTimeStrategy;
     }
@@ -101,7 +120,15 @@ public class MetricRegistry {
         this.registryTags = null;
         useStartTimeAsEventTime = startTimeStrategy;
         if (enableRegistryCache) {
-            registries.put(prefix , this);
+            List<MetricRegistry> lst = null;
+            if (registries.containsKey(prefix)) {
+                lst = registries.get(prefix);
+            }
+            else {
+                lst = new LinkedList<>();
+                registries.put(prefix, lst);
+            }
+            lst.add(this);
         }
     }
 
@@ -118,16 +145,42 @@ public class MetricRegistry {
         return enableRegistryCache;
     }
 
-    /** Returns a previously created registry, where prefix = serviceTeam.application.appType
-     * (note: '.' on end)
+    /** Returns a previously created registry, with provided prefix, and tags
+     *  note: not all tags must be provided, but every tag provided must be match
+     *  if no tags as provided, then' first' registry found with matching prefix will be returned.
+     * 
      * @param prefix the prefix for the registry
-     * @return The matching MetricRegistry in question, or null if non found.
+     * @return The matching MetricRegistry in question, or null if not found.
      * */
-    public static MetricRegistry getRegistry(String prefix) {
-        if (!prefix.endsWith(".")) {
-            return registries.get(prefix + ".");
+    public static MetricRegistry getRegistry(String prefix, String... tags) {
+        List<MetricRegistry> lst;
+        if (!prefix.endsWith(".")) {            
+            lst = registries.get(prefix + ".");
         }
-        return registries.get(prefix);
+        else {
+            lst = registries.get(prefix);
+        }
+        if (tags == null && lst != null && lst.size()>0) {
+            return lst.get(0);
+        }
+
+        if (lst != null && tags!=null && tags.length > 0) {
+            Map<String,String> map = Util.buildTags(tags);            
+            for (MetricRegistry mr : lst) {
+                boolean match = true;
+                for (Map.Entry<String,String> e: map.entrySet()) {
+                    String val = mr.getTags().get(e.getKey());
+                    if (val == null || !val.equals(e.getValue())) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    return mr;
+                }                
+            }
+        }        
+        return null;
     }
 
     public String getPrefix() {
@@ -313,6 +366,7 @@ public class MetricRegistry {
     public void eventAtTs(String name, long ts, Map<String,String> customTags) {
         eventAtTs(name, ts, 1, customTags);
     }
+    
     public void eventAtTs(String name, long ts, double value, String...customTags) {
         eventAtTs(name, ts, value, Util.buildTags(customTags));
     }
