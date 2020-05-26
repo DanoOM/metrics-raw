@@ -150,6 +150,7 @@ public class MetricRegistry {
      *  if no tags as provided, then' first' registry found with matching prefix will be returned.
      * 
      * @param prefix the prefix for the registry
+     * @param tags The list of tags for the registry.  Only discriminating tags are needed.
      * @return The matching MetricRegistry in question, or null if not found.
      * */
     public static MetricRegistry getRegistry(String prefix, String... tags) {
