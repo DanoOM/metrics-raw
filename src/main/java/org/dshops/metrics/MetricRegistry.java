@@ -2,6 +2,7 @@ package org.dshops.metrics;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,20 +10,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+@SuppressWarnings("rawtypes")
 public class MetricRegistry {
 	private final String prefix;
     private final Map<String,String> registryTags;
     private final Map<MetricKey, Counter> counters = new ConcurrentHashMap<>();
-    private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
+    
+	private final Map<MetricKey, Gauge> gauges = new ConcurrentHashMap<>();
     private final Map<MetricKey, Gauge> meters = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
 
-    private final Map<MetricKey, PercentileTimer> percentileTimers = new ConcurrentHashMap<>();
-
-    private final ScheduledThreadPoolExecutor pools = new ScheduledThreadPoolExecutor(10, new DaemonThreadFactory());
+    private ScheduledThreadPoolExecutor pools = null; 
     // registries stored by prefix
-    private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+    private static final Map<String, List<MetricRegistry>> registries = new ConcurrentHashMap<>();
     private boolean useStartTimeAsEventTime = false;
     private boolean enableMilliIndexing = false;
     private static boolean enableRegistryCache = true;
@@ -71,20 +71,30 @@ public class MetricRegistry {
             return this;
         }
 
-        public MetricRegistry build() {
-            MetricRegistry mr = registries.get(prefix);
-            if (mr == null) {
-                synchronized (registries) {
-                    mr = registries.get(prefix);
-                    if (mr == null) {
-                        if (tags.size() > 0)
-                            mr = new MetricRegistry(prefix, startTimeStrategy, tags);
-                        else
-                            mr = new MetricRegistry(prefix, startTimeStrategy);
-                    }
+        public MetricRegistry build() {            
+            List<MetricRegistry> regs = registries.get(prefix);            
+            if (regs != null) {
+                // tag set must match.
+                for (MetricRegistry mr : regs) {
+                    if (mr.registryTags.equals(tags))
+                        return mr;
                 }
+            }            
+            synchronized (registries) {
+                if (regs != null) {
+                    // tag set must match.
+                    for (MetricRegistry mr : regs) {
+                        if (mr.registryTags.equals(tags))
+                            return mr;
+                    }
+                }   
+                MetricRegistry mr = null; 
+                if (tags.size() > 0)
+                    mr = new MetricRegistry(prefix, startTimeStrategy, tags);
+                else
+                    mr = new MetricRegistry(prefix, startTimeStrategy);
+                return mr;
             }
-            return mr;
         }
     }
 
@@ -92,7 +102,15 @@ public class MetricRegistry {
     	this.prefix = prefix;
         this.registryTags = tags;
         if (enableRegistryCache) {
-            registries.put(prefix , this);
+            List<MetricRegistry> lst = null;
+            if (registries.containsKey(prefix)) {
+                lst = registries.get(prefix);
+            }
+            else {
+                lst = new LinkedList<>();
+                registries.put(prefix, lst);
+            }
+            lst.add(this);            
         }
         useStartTimeAsEventTime = startTimeStrategy;
     }
@@ -102,13 +120,22 @@ public class MetricRegistry {
         this.registryTags = null;
         useStartTimeAsEventTime = startTimeStrategy;
         if (enableRegistryCache) {
-            registries.put(prefix , this);
+            List<MetricRegistry> lst = null;
+            if (registries.containsKey(prefix)) {
+                lst = registries.get(prefix);
+            }
+            else {
+                lst = new LinkedList<>();
+                registries.put(prefix, lst);
+            }
+            lst.add(this);
         }
     }
 
     /** By Default registries created with the same signature will be re-used,
      * this can be disabled (typically done for testing).
      * Changing this value after a registry is created as know effect.
+     * @param enableRegistryCaching flag to enable/disable registry caching (re-use) 
      * */
     public static void enableRegistryCaching(boolean enableRegistryCaching) {
         enableRegistryCache = enableRegistryCaching;
@@ -118,14 +145,43 @@ public class MetricRegistry {
         return enableRegistryCache;
     }
 
-    /** Returns a previously created registry, where prefix = serviceTeam.application.appType
-     * (note: '.' on end)
+    /** Returns a previously created registry, with provided prefix, and tags
+     *  note: not all tags must be provided, but every tag provided must be match
+     *  if no tags as provided, then' first' registry found with matching prefix will be returned.
+     * 
+     * @param prefix the prefix for the registry
+     * @param tags The list of tags for the registry.  Only discriminating tags are needed.
+     * @return The matching MetricRegistry in question, or null if not found.
      * */
-    public static MetricRegistry getRegistry(String prefix) {
-        if (!prefix.endsWith(".")) {
-            return registries.get(prefix + ".");
+    public static MetricRegistry getRegistry(String prefix, String... tags) {
+        List<MetricRegistry> lst;
+        if (!prefix.endsWith(".")) {            
+            lst = registries.get(prefix + ".");
         }
-        return registries.get(prefix);
+        else {
+            lst = registries.get(prefix);
+        }
+        if (tags == null && lst != null && lst.size()>0) {
+            return lst.get(0);
+        }
+
+        if (lst != null && tags!=null && tags.length > 0) {
+            Map<String,String> map = Util.buildTags(tags);            
+            for (MetricRegistry mr : lst) {
+                boolean match = true;
+                for (Map.Entry<String,String> e: map.entrySet()) {
+                    String val = mr.getTags().get(e.getKey());
+                    if (val == null || !val.equals(e.getValue())) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    return mr;
+                }                
+            }
+        }        
+        return null;
     }
 
     public String getPrefix() {
@@ -169,16 +225,20 @@ public class MetricRegistry {
     }
 
     /** Counters not recommended for real use, but may be
-     * useful for testing/early integration. */
+     * useful for testing/early integration. 
+     * @param name the name of the counter
+     * @return the counter
+     * */
     public Counter counter(String name) {
         name = name+".counter";
-        Counter c = getCounters().get(new MetricKey(name));
-        if (c == null){
+        MetricKey key = new MetricKey(name);
+        Counter c = getCounters().get(key);        
+        if (c == null) {
             synchronized (getCounters()) {
-                c = getCounters().get(name);
+                c = getCounters().get(key);
                 if (c == null) {
                     Counter tmp = new Counter(name, this);
-                    getCounters().put(new MetricKey(name),tmp);
+                    getCounters().put(key,tmp);
                     return tmp;
                 }
             }
@@ -209,15 +269,20 @@ public class MetricRegistry {
 
     /** Generates an alert, where the metricName is:
      *     ServiceTeam.app.type.alerts
-     *     tag will contain a tag, called alertName, with the alertName passed here.s
+     *     tag will contain a tag, called alertName, with the alertName passed here.
+     *     @param alertName the alername, will manifest in the name tag
      * */
-    public void alert(String alertName) {
+   
+    @SuppressWarnings("unchecked")
+	public void alert(String alertName) {
         alert(alertName, 1, Collections.EMPTY_MAP);
     }
+    @SuppressWarnings("unchecked")
     public void alert(String alertName, String...customTags) {
         alert(alertName, 1, Collections.EMPTY_MAP);
     }
 
+    @SuppressWarnings("unchecked")
     public void alert(String alertName, long value) {
         alert(alertName, value, Collections.EMPTY_MAP);
     }
@@ -232,6 +297,7 @@ public class MetricRegistry {
         dispatchEvent(new LongEvent(prefix + "alerts", ctags, System.currentTimeMillis(), value));
     }
 
+    @SuppressWarnings("unchecked")
     public void alert(String alertName, double value) {
         alert(alertName, value, Collections.EMPTY_MAP);
     }
@@ -250,10 +316,12 @@ public class MetricRegistry {
         event(name,1);
     }
 
+    @SuppressWarnings("unchecked")
     public void event(String name, long value) {
         event(name,value,Collections.EMPTY_MAP);
     }
 
+    @SuppressWarnings("unchecked")
     public void event(String name, double value) {
         event(name,value,Collections.EMPTY_MAP);
     }
@@ -287,15 +355,19 @@ public class MetricRegistry {
     public void eventAtTs(String name, long ts) {
         eventAtTs(name, ts, 1);
     }
+    
+    @SuppressWarnings("unchecked")
     public void eventAtTs(String name, long ts, long value) {
         eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
+    @SuppressWarnings("unchecked")
     public void eventAtTs(String name, long ts, double value) {
         eventAtTs(name, ts, value, Collections.EMPTY_MAP);
     }
     public void eventAtTs(String name, long ts, Map<String,String> customTags) {
         eventAtTs(name, ts, 1, customTags);
     }
+    
     public void eventAtTs(String name, long ts, double value, String...customTags) {
         eventAtTs(name, ts, value, Util.buildTags(customTags));
     }
@@ -312,7 +384,7 @@ public class MetricRegistry {
     }
 
     public void eventBucket(String name) {
-        eventBucket(name, null);
+        eventBucket(name, 1);
     }
 
     public void eventBucket(String name, String...customTags) {
@@ -355,7 +427,7 @@ public class MetricRegistry {
             synchronized (gauge) {
                 if (!gauges.containsKey(key)) {
                     gauges.put(key, gauge);
-                    pools.scheduleWithFixedDelay(new GaugeRunner(key, gauge, this),
+                    pools.scheduleWithFixedDelay(new GaugeRunner<>(key, gauge, this),
                                                  0,
                                                  intervalInSeconds,
                                                  TimeUnit.SECONDS);
@@ -364,7 +436,14 @@ public class MetricRegistry {
         }
     }
 
-    /** Allows the provided gauge to invoked at millisecond accuracy, but will only report the max result of those calls at the reportInterval */
+    /** Allows the provided gauge to invoked at millisecond accuracy, but will only report the max result of those calls at the reportInterval 
+     * @param name name of gauge 
+     * @param collectionIntervalInMillis frequency the values is inspected (frequency function is invoked)
+     * @param reportIntervalInSeconds frequency to report the value
+     * @param gauge the gauge to invoke
+     * @param tags one more more tags
+     * 
+     * */
     public void scheduleMaxGauge(String name, int collectionIntervalInMillis, int reportIntervalInSeconds, Gauge<? extends Number> gauge, String...tags) {
         scheduleMaxGauge(name,collectionIntervalInMillis, reportIntervalInSeconds, gauge, Util.buildTags(tags));
     }
@@ -376,7 +455,7 @@ public class MetricRegistry {
             synchronized (gauge) {
                 if (!gauges.containsKey(key)) {
                     gauges.put(key, gauge);
-                    pools.scheduleWithFixedDelay(new GaugeRunner(key, gauge, reportIntervalInSeconds, this),
+                    pools.scheduleWithFixedDelay(new GaugeRunner<>(key, gauge, reportIntervalInSeconds, this),
                                                  0,
                                                  collectionIntervalInMilis,
                                                  TimeUnit.MILLISECONDS);
@@ -385,7 +464,8 @@ public class MetricRegistry {
         }
     }
 
-    public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
+    @SuppressWarnings("unchecked")
+	public Meter scheduleMeter(String name, int intervalInSeconds, String...tags) {
         name = name + ".meter";
         MetricKey key = new MetricKey(name, Util.buildTags(tags));
         Gauge meter = meters.get(key);
@@ -395,10 +475,10 @@ public class MetricRegistry {
                 if (meter == null) {
                     meter = new MeterImpl();
                     meters.put(key,meter);
-                    pools.scheduleWithFixedDelay(new GaugeRunner(key, meter, this),
+                    pools.scheduleWithFixedDelay(new GaugeRunner<>(key, meter, this),
                                                  0,
                                                  intervalInSeconds,
-                                                 TimeUnit.SECONDS);
+                                                 TimeUnit.SECONDS);                   
                 }
             }
         }
@@ -419,8 +499,17 @@ public class MetricRegistry {
     }
 
     public void addEventListener(EventListener listener) {
+    	if (pools == null) {
+    		// ensure thread pool is up
+    		synchronized (listeners) {
+    			if (pools == null)
+    				pools = new ScheduledThreadPoolExecutor(4, new DaemonThreadFactory());				
+			}
+    	}
+
         if (!listeners.contains(listener)) {
             synchronized (listeners) {
+            	
                 if (!listeners.contains(listener)) {
                     if (listener instanceof EventIndexingListener){
                         enableMilliIndexing = true;
@@ -431,18 +520,96 @@ public class MetricRegistry {
         }
     }
 
+    /** 
+     * @deprecated use removeAllEventListeners(boolean stop)
+     * @param listener Eventlistener to remove
+     * */
+    @Deprecated
     public void removeEventListener(EventListener listener) {
-        listener.stop();
+        listener.stop();        
         listeners.remove(listener);
-    }
-
-    public void removeAllEventListeners() {
-        for(EventListener listener : listeners) {
-            listener.stop();
+        if (listeners.isEmpty()) {
+        	try {
+        		pools.shutdown();
+        		
+        	}
+        	catch(Exception e) {
+        		// no-op
+        	}
+        	finally {
+        		pools = null;
+        	}
         }
-        listeners.clear();
+    }
+    
+    /**
+     * Will remove the specified listener from this MetricRegistry
+     * If stop = true, will also stop the listener if the listener is shared with other
+     * MetricRegistries, this will STOP for all metricRegistries!
+     * @param listener Eventlistener to remove
+     * @param stop set to true to also terminate the listener
+     * */
+    public void removeEventListener(EventListener listener, boolean stop) {
+        
+    	if (stop) {
+    		listener.stop();
+    		gauges.clear();
+            meters.clear();
+            counters.clear();
+    	}
+    	
+        listeners.remove(listener);
+        if (listeners.isEmpty()) {
+        	try {
+        		gauges.clear();
+                meters.clear();
+        		pools.shutdown();        		
+        	}
+        	catch(Exception e) {
+        		// no-op
+        	}
+        	finally {
+        		pools = null;
+        	}
+        }
     }
 
+    /** 
+     * @deprecated use removeAllEventListeners(boolean stop)
+     * */
+    @Deprecated    
+    public void removeAllEventListeners() {
+    	removeAllEventListeners(true);
+    }
+
+    /**
+     * Will remove all listeners for this metricRegistory
+     * If stop = true, will also stop the listener if the listener is shared with other
+     * MetricRegistries, this will STOP for all metricRegistries!
+     * @param stop set to true to terminate/stop all event listeners
+     * */
+    public void removeAllEventListeners(boolean stop) {
+    	if (stop) {
+	        for(EventListener listener : listeners) {
+	            listener.stop();
+	        }
+    	}
+        listeners.clear();
+        try
+        {
+        	gauges.clear();
+            meters.clear();
+            counters.clear();
+        	pools.shutdown();        	
+        }
+    	catch(Exception e) {
+    		// no-op
+    	}
+        finally {
+    		pools = null;
+    	}      
+    }
+    
     public List<EventListener> getListeners() {
         return Collections.unmodifiableList(listeners);
     }
